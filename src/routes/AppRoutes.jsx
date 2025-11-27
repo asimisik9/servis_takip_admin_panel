@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import MainLayout from '../layout/MainLayout';
 import Dashboard from '../pages/Dashboard';
 import Users from '../pages/Users';
@@ -9,20 +9,39 @@ import Buses from '../pages/Buses';
 import Assignments from '../pages/Assignments';
 import Login from '../pages/Login';
 import PrivateRoute from './PrivateRoute';
+import { getToken } from '../services/authService';
+
+const PublicRoute = ({ children }) => {
+  const token = getToken();
+  return !token ? children : <Navigate to="/" replace />;
+};
+
+const ProtectedLayout = () => (
+  <MainLayout>
+    <Outlet />
+  </MainLayout>
+);
 
 const AppRoutes = () => (
   <Router>
-    <MainLayout>
-      <Routes>
-        <Route path="/login" element={<Login />} />
-        <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-        <Route path="/users" element={<PrivateRoute><Users /></PrivateRoute>} />
-        <Route path="/students" element={<PrivateRoute><Students /></PrivateRoute>} />
-        <Route path="/schools" element={<PrivateRoute><Schools /></PrivateRoute>} />
-        <Route path="/buses" element={<PrivateRoute><Buses /></PrivateRoute>} />
-        <Route path="/assignments" element={<PrivateRoute><Assignments /></PrivateRoute>} />
-      </Routes>
-    </MainLayout>
+    <Routes>
+      <Route path="/login" element={
+        <PublicRoute>
+          <Login />
+        </PublicRoute>
+      } />
+      
+      <Route element={<PrivateRoute><ProtectedLayout /></PrivateRoute>}>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/users" element={<Users />} />
+        <Route path="/students" element={<Students />} />
+        <Route path="/schools" element={<Schools />} />
+        <Route path="/buses" element={<Buses />} />
+        <Route path="/assignments" element={<Assignments />} />
+      </Route>
+
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   </Router>
 );
 

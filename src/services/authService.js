@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8000/auth';
+const API_URL = 'http://localhost:8000/api/auth';
 
 export const login = async (username, password) => {
   const params = new URLSearchParams();
@@ -11,7 +11,19 @@ export const login = async (username, password) => {
   const response = await axios.post(`${API_URL}/login`, params, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
   });
+  
+  console.log('Login response:', response);
+
+  if (!response.data) {
+    throw new Error('Sunucudan boş yanıt döndü.');
+  }
+
   const { access_token, user } = response.data;
+  
+  if (!access_token) {
+    throw new Error('Access token alınamadı.');
+  }
+
   localStorage.setItem('token', access_token);
   localStorage.setItem('user', JSON.stringify(user));
   return { access_token, user };
@@ -35,10 +47,17 @@ export const logout = async () => {
 };
 
 export const getToken = () => {
-  return localStorage.getItem('token');
+  const token = localStorage.getItem('token');
+  if (!token || token === 'undefined' || token === 'null') return null;
+  return token;
 };
 
 export const getUser = () => {
   const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
+  if (!user || user === 'undefined' || user === 'null') return null;
+  try {
+    return JSON.parse(user);
+  } catch (e) {
+    return null;
+  }
 };

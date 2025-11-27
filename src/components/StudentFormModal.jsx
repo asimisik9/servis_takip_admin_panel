@@ -5,7 +5,8 @@ const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => 
   const [form, setForm] = useState({
     full_name: '',
     student_number: '',
-    school_id: ''
+    school_id: '',
+    address: ''
   });
 
   useEffect(() => {
@@ -13,13 +14,15 @@ const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => 
       setForm({
         full_name: initialData.full_name || '',
         student_number: initialData.student_number || '',
-        school_id: initialData.school_id || ''
+        school_id: initialData.school_id || '',
+        address: initialData.address || ''
       });
     } else {
       setForm({
         full_name: '',
         student_number: '',
-        school_id: ''
+        school_id: '',
+        address: ''
       });
     }
   }, [initialData, open]);
@@ -56,6 +59,17 @@ const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => 
             placeholder="2025001"
             value={form.student_number}
             onChange={handleChange}
+          />
+          <TextField
+            margin="normal"
+            label="Adres"
+            name="address"
+            fullWidth
+            multiline
+            rows={3}
+            value={form.address}
+            onChange={handleChange}
+            helperText="Google Maps formatında açık adres giriniz"
           />
           <TextField
             margin="normal"

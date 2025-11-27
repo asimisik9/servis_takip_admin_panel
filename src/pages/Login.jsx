@@ -17,7 +17,9 @@ const Login = () => {
       await login(username, password);
       navigate('/');
     } catch (err) {
-      setError('Giriş başarısız!');
+      console.error('Login error:', err);
+      const errorMessage = err.response?.data?.detail || err.message || 'Giriş başarısız! Kullanıcı adı veya şifre hatalı.';
+      setError(errorMessage);
     }
   };
 
