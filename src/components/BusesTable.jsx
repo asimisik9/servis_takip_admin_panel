@@ -3,9 +3,8 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Box, Button, Typography, IconButton, Chip } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import MapIcon from '@mui/icons-material/Map';
 
-const BusesTable = ({ buses, schools, drivers, onAdd, onEdit, onDelete, onShowLocation }) => {
+const BusesTable = ({ buses, schools, drivers, onAdd, onEdit, onDelete }) => {
   // School ID'sine göre okul adını bul
   const getSchoolName = (schoolId) => {
     const school = schools.find(s => s.id === schoolId);
@@ -55,14 +54,6 @@ const BusesTable = ({ buses, schools, drivers, onAdd, onEdit, onDelete, onShowLo
       sortable: false,
       renderCell: (params) => (
         <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton
-            size="small"
-            color="success"
-            onClick={() => onShowLocation(params.row)}
-            title="Konumu Göster"
-          >
-            <MapIcon fontSize="small" />
-          </IconButton>
           <IconButton
             size="small"
             color="primary"

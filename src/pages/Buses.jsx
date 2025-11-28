@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import BusesTable from '../components/BusesTable';
 import BusFormModal from '../components/BusFormModal';
-import BusLocationModal from '../components/BusLocationModal';
 import { fetchBuses, createBus, updateBus, deleteBus } from '../services/busService';
 import { fetchSchools } from '../services/schoolService';
 import { fetchUsers } from '../services/userService';
@@ -25,8 +24,6 @@ const Buses = () => {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBus, setEditingBus] = useState(null);
-  const [locationModalOpen, setLocationModalOpen] = useState(false);
-  const [selectedBusForLocation, setSelectedBusForLocation] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, busId: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
@@ -95,16 +92,6 @@ const Buses = () => {
     setDeleteDialog({ open: true, busId });
   };
 
-  const handleShowLocation = (bus) => {
-    setSelectedBusForLocation(bus);
-    setLocationModalOpen(true);
-  };
-
-  const handleLocationModalClose = () => {
-    setLocationModalOpen(false);
-    setSelectedBusForLocation(null);
-  };
-
   const confirmDelete = async () => {
     try {
       await deleteBus(deleteDialog.busId);
@@ -166,7 +153,6 @@ const Buses = () => {
         onAdd={handleAddBus}
         onEdit={handleEditBus}
         onDelete={handleDeleteBus}
-        onShowLocation={handleShowLocation}
       />
       
       <BusFormModal 
@@ -176,12 +162,6 @@ const Buses = () => {
         initialData={editingBus}
         schools={schools}
         drivers={drivers}
-      />
-
-      <BusLocationModal 
-        open={locationModalOpen}
-        onClose={handleLocationModalClose}
-        bus={selectedBusForLocation}
       />
 
       <Dialog
