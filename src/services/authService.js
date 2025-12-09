@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const API_URL = 'http://localhost:8000/api/auth';
+import { AUTH_API_URL } from './config';
 
 export const login = async (username, password) => {
   const params = new URLSearchParams();
@@ -8,7 +7,7 @@ export const login = async (username, password) => {
   params.append('username', username);
   params.append('password', password);
 
-  const response = await axios.post(`${API_URL}/login`, params, {
+  const response = await axios.post(`${AUTH_API_URL}/login`, params, {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
   });
   
@@ -34,7 +33,7 @@ export const logout = async () => {
   if (token) {
     try {
       // Backend'e logout request gönder
-      await axios.post(`${API_URL}/logout`, {}, {
+      await axios.post(`${AUTH_API_URL}/logout`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
     } catch (error) {

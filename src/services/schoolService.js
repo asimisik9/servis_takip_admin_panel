@@ -1,7 +1,8 @@
 import axios from 'axios';
 import { getToken } from './authService';
+import { ADMIN_API_URL } from './config';
 
-const API_URL = 'http://localhost:8000/api/admin/schools';
+const API_URL = `${ADMIN_API_URL}/schools`;
 
 export const fetchSchools = async () => {
   const response = await axios.get(API_URL, {
