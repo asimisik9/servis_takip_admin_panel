@@ -3,12 +3,9 @@ import { DataGrid } from '@mui/x-data-grid';
 import { Box, Typography, IconButton, Tabs, Tab, Button } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
 
-const AssignmentsTable = ({ 
-  studentBusAssignments, 
+const AssignmentsTable = ({
+  studentBusAssignments,
   parentStudentRelations,
-  students,
-  buses,
-  users,
   onAddStudentBus,
   onAddParentStudent,
   onDeleteStudentBus,
@@ -20,38 +17,28 @@ const AssignmentsTable = ({
     setTabValue(newValue);
   };
 
-  // Helper functions
-  const getStudentName = (studentId) => {
-    const student = students.find(s => s.id === studentId);
-    return student ? `${student.full_name} (${student.student_number})` : 'Bilinmiyor';
-  };
-
-  const getBusInfo = (busId) => {
-    const bus = buses.find(b => b.id === busId);
-    return bus ? bus.plate_number : 'Bilinmiyor';
-  };
-
-  const getUserName = (userId) => {
-    const user = users.find(u => u.id === userId);
-    return user ? user.full_name : 'Bilinmiyor';
-  };
-
   // Student-Bus Assignments columns
   const studentBusColumns = [
     { field: 'id', headerName: 'ID', width: 80 },
-    { 
-      field: 'student_id', 
-      headerName: 'Öğrenci', 
-      flex: 1, 
+    {
+      field: 'student',
+      headerName: 'Öğrenci',
+      flex: 1,
       minWidth: 200,
-      valueGetter: (params) => getStudentName(params)
+      valueGetter: (value, row) => {
+        const student = row?.student;
+        return student ? `${student.full_name} (${student.student_number})` : 'Bilinmiyor';
+      }
     },
-    { 
-      field: 'bus_id', 
-      headerName: 'Otobüs (Plaka)', 
-      flex: 1, 
+    {
+      field: 'bus',
+      headerName: 'Otobüs (Plaka)',
+      flex: 1,
       minWidth: 150,
-      valueGetter: (params) => getBusInfo(params)
+      valueGetter: (value, row) => {
+        const bus = row?.bus;
+        return bus ? `${bus.plate_number} (Kapasite: ${bus.capacity})` : 'Bilinmiyor';
+      }
     },
     {
       field: 'actions',
@@ -74,19 +61,25 @@ const AssignmentsTable = ({
   // Parent-Student Relations columns
   const parentStudentColumns = [
     { field: 'id', headerName: 'ID', width: 80 },
-    { 
-      field: 'student_id', 
-      headerName: 'Öğrenci', 
-      flex: 1, 
+    {
+      field: 'student',
+      headerName: 'Öğrenci',
+      flex: 1,
       minWidth: 200,
-      valueGetter: (params) => getStudentName(params)
+      valueGetter: (value, row) => {
+        const student = row?.student;
+        return student ? `${student.full_name} (${student.student_number})` : 'Bilinmiyor';
+      }
     },
-    { 
-      field: 'parent_id', 
-      headerName: 'Veli', 
-      flex: 1, 
+    {
+      field: 'parent',
+      headerName: 'Veli',
+      flex: 1,
       minWidth: 200,
-      valueGetter: (params) => getUserName(params)
+      valueGetter: (value, row) => {
+        const parent = row?.parent;
+        return parent ? `${parent.full_name} (${parent.email || parent.phone_number})` : 'Bilinmiyor';
+      }
     },
     {
       field: 'actions',
@@ -110,14 +103,14 @@ const AssignmentsTable = ({
     <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 2, borderRadius: 2, boxShadow: 2 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Atamalar</Typography>
-        <Button 
-          variant="contained" 
+        <Button
+          variant="contained"
           onClick={tabValue === 0 ? onAddStudentBus : onAddParentStudent}
         >
           Yeni Atama
         </Button>
       </Box>
-      
+
       <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
         <Tab label="Öğrenci-Otobüs Atamaları" />
         <Tab label="Öğrenci-Veli İlişkileri" />

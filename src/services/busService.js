@@ -4,9 +4,19 @@ import { ADMIN_API_URL } from './config';
 
 const API_URL = `${ADMIN_API_URL}/buses`;
 
-export const fetchBuses = async () => {
+/**
+ * Fetch buses with pagination
+ * @param {number} skip - Number of items to skip
+ * @param {number} limit - Number of items per page
+ * @returns {Promise<{items: Array, total: number, skip: number, limit: number}>}
+ */
+export const fetchBuses = async (skip = 0, limit = 20, schoolId = null) => {
+  const params = { skip, limit };
+  if (schoolId) params.school_id = schoolId;
+
   const response = await axios.get(API_URL, {
     headers: { Authorization: `Bearer ${getToken()}` },
+    params
   });
   return response.data;
 };

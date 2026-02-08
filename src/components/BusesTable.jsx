@@ -5,18 +5,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const BusesTable = ({ buses, schools, drivers, onAdd, onEdit, onDelete }) => {
-  // School ID'sine göre okul adını bul
-  const getSchoolName = (schoolId) => {
-    const school = schools.find(s => s.id === schoolId);
-    return school ? school.school_name : 'Bilinmiyor';
-  };
-
-  // Driver ID'sine göre şoför adını bul
-  const getDriverName = (driverId) => {
-    const driver = drivers.find(d => d.id === driverId);
-    return driver ? driver.full_name : 'Atanmamış';
-  };
-
   const columns = [
     { field: 'id', headerName: 'ID', width: 80 },
     { field: 'plate_number', headerName: 'Plaka', width: 130 },
@@ -38,14 +26,29 @@ const BusesTable = ({ buses, schools, drivers, onAdd, onEdit, onDelete }) => {
       headerName: 'Okul', 
       flex: 1, 
       minWidth: 180,
-      renderCell: (params) => getSchoolName(params.value)
+      valueGetter: (value, row) => {
+        // Önce backend'den gelen school_name'i kullan
+        if (row?.school_name) return row.school_name;
+        // Fallback: schools listesinden eşleştir
+        const school = schools?.find(s => s.id === value);
+        return school ? school.school_name : 'Bilinmiyor';
+      }
     },
     { 
       field: 'current_driver_id', 
       headerName: 'Şoför', 
       flex: 1, 
       minWidth: 150,
-      renderCell: (params) => getDriverName(params.value)
+      valueGetter: (value, row) => {
+        // Önce backend'den gelen driver_name'i kullan
+        if (row?.driver_name) return row.driver_name;
+        // Fallback: current_driver objesini kontrol et
+        if (row?.current_driver?.full_name) return row.current_driver.full_name;
+        // Fallback: drivers listesinden eşleştir
+        if (!value) return 'Atanmamış';
+        const driver = drivers?.find(d => d.id === value);
+        return driver ? driver.full_name : 'Atanmamış';
+      }
     },
     {
       field: 'actions',

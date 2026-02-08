@@ -1,19 +1,20 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import SchoolsTable from '../components/SchoolsTable';
 import SchoolFormModal from '../components/SchoolFormModal';
 import { fetchSchools, createSchool, updateSchool, deleteSchool } from '../services/schoolService';
 import { fetchUsers } from '../services/userService';
-import { 
-  CircularProgress, 
-  Box, 
-  Snackbar, 
+import {
+  CircularProgress,
+  Box,
+  Snackbar,
   Alert,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogContentText,
   DialogActions,
-  Button
+  Button,
+  TablePagination
 } from '@mui/material';
 
 const Schools = () => {
@@ -25,32 +26,40 @@ const Schools = () => {
   const [deleteDialog, setDeleteDialog] = useState({ open: false, schoolId: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const loadSchools = async () => {
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+
+  const loadSchools = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await fetchSchools();
-      setSchools(data);
+      const skip = page * rowsPerPage;
+      const data = await fetchSchools(skip, rowsPerPage);
+      setSchools(data.items || []);
+      setTotalCount(data.total || 0);
     } catch (error) {
-      setSnackbar({ 
-        open: true, 
-        message: error.response?.data?.detail || 'Okullar yüklenemedi!', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.detail || 'Okullar yüklenemedi!',
+        severity: 'error'
       });
       setSchools([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [page, rowsPerPage]);
 
   const loadUsers = async () => {
     try {
-      const data = await fetchUsers();
-      setUsers(data);
+      const data = await fetchUsers(0, 1000);
+      setUsers(data.items || []);
     } catch (error) {
-      setSnackbar({ 
-        open: true, 
-        message: 'Kullanıcılar yüklenemedi!', 
-        severity: 'warning' 
+      setSnackbar({
+        open: true,
+        message: 'Kullanıcılar yüklenemedi!',
+        severity: 'warning'
       });
       setUsers([]);
     }
@@ -59,7 +68,16 @@ const Schools = () => {
   useEffect(() => {
     loadSchools();
     loadUsers();
-  }, []);
+  }, [loadSchools]);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   const handleAddSchool = () => {
     setEditingSchool(null);
@@ -81,10 +99,10 @@ const Schools = () => {
       setSnackbar({ open: true, message: 'Okul başarıyla silindi!', severity: 'success' });
       loadSchools();
     } catch (error) {
-      setSnackbar({ 
-        open: true, 
-        message: error.response?.data?.detail || 'Okul silinemedi!', 
-        severity: 'error' 
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.detail || 'Okul silinemedi!',
+        severity: 'error'
       });
     } finally {
       setDeleteDialog({ open: false, schoolId: null });
@@ -109,8 +127,8 @@ const Schools = () => {
       setEditingSchool(null);
       loadSchools();
     } catch (error) {
-      const errorMessage = error.response?.data?.detail || 
-                          (editingSchool ? 'Okul güncellenemedi!' : 'Okul eklenemedi!');
+      const errorMessage = error.response?.data?.detail ||
+        (editingSchool ? 'Okul güncellenemedi!' : 'Okul eklenemedi!');
       setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     }
   };
@@ -119,7 +137,7 @@ const Schools = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  if (loading) {
+  if (loading && schools.length === 0) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
         <CircularProgress />
@@ -129,17 +147,30 @@ const Schools = () => {
 
   return (
     <>
-      <SchoolsTable 
+      <SchoolsTable
         schools={schools}
         users={users}
         onAdd={handleAddSchool}
         onEdit={handleEditSchool}
         onDelete={handleDeleteSchool}
+        loading={loading}
       />
-      
-      <SchoolFormModal 
-        open={modalOpen} 
-        onClose={handleModalClose} 
+
+      <TablePagination
+        component="div"
+        count={totalCount}
+        page={page}
+        onPageChange={handleChangePage}
+        rowsPerPage={rowsPerPage}
+        onRowsPerPageChange={handleChangeRowsPerPage}
+        rowsPerPageOptions={[10, 20, 50, 100]}
+        labelRowsPerPage="Sayfa başına satır:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
+      />
+
+      <SchoolFormModal
+        open={modalOpen}
+        onClose={handleModalClose}
         onSubmit={handleSchoolSubmit}
         initialData={editingSchool}
         users={users}
@@ -165,9 +196,9 @@ const Schools = () => {
         </DialogActions>
       </Dialog>
 
-      <Snackbar 
-        open={snackbar.open} 
-        autoHideDuration={4000} 
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
         onClose={handleCloseSnackbar}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
       >

@@ -7,13 +7,19 @@ import Students from '../pages/Students';
 import Schools from '../pages/Schools';
 import Buses from '../pages/Buses';
 import Assignments from '../pages/Assignments';
+import Organizations from '../pages/Organizations';
 import Login from '../pages/Login';
 import PrivateRoute from './PrivateRoute';
-import { getToken } from '../services/authService';
+import { getToken, getUser } from '../services/authService';
 
 const PublicRoute = ({ children }) => {
   const token = getToken();
   return !token ? children : <Navigate to="/" replace />;
+};
+
+const SuperAdminRoute = ({ children }) => {
+  const user = getUser();
+  return user?.role === 'super_admin' ? children : <Navigate to="/" replace />;
 };
 
 const ProtectedLayout = () => (
@@ -30,9 +36,10 @@ const AppRoutes = () => (
           <Login />
         </PublicRoute>
       } />
-      
+
       <Route element={<PrivateRoute><ProtectedLayout /></PrivateRoute>}>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/organizations" element={<SuperAdminRoute><Organizations /></SuperAdminRoute>} />
         <Route path="/users" element={<Users />} />
         <Route path="/students" element={<Students />} />
         <Route path="/schools" element={<Schools />} />

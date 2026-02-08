@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box } from '@mui/material';
+import { getUser } from '../services/authService';
 
-const roles = [
-  { value: 'admin', label: 'Admin' },
-  { value: 'sofor', label: 'Şoför' },
-  { value: 'veli', label: 'Veli' },
-];
+const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [] }) => {
+  const currentUser = getUser();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
 
-const UserFormModal = ({ open, onClose, onSubmit, initialData }) => {
+  const roles = [
+    ...(isSuperAdmin ? [{ value: 'super_admin', label: 'Super Admin' }] : []),
+    { value: 'admin', label: 'Admin' },
+    { value: 'sofor', label: 'Şoför' },
+    { value: 'veli', label: 'Veli' },
+  ];
+
   const [form, setForm] = useState({
     full_name: '',
     email: '',
     phone_number: '',
     role: 'veli',
-    password: ''
+    password: '',
+    organization_id: ''
   });
 
   useEffect(() => {
@@ -23,7 +29,8 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData }) => {
         email: initialData.email || '',
         phone_number: initialData.phone_number || '',
         role: initialData.role || 'veli',
-        password: '' // Password is optional when editing
+        password: '',
+        organization_id: initialData.organization_id || ''
       });
     } else {
       setForm({
@@ -31,7 +38,8 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData }) => {
         email: '',
         phone_number: '',
         role: 'veli',
-        password: ''
+        password: '',
+        organization_id: ''
       });
     }
   }, [initialData, open]);
@@ -42,10 +50,15 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // If editing and password is empty, remove it from the form data
     const submitData = { ...form };
     if (initialData && !submitData.password) {
       delete submitData.password;
+    }
+    // Only send organization_id if super_admin
+    if (!isSuperAdmin) {
+      delete submitData.organization_id;
+    } else if (submitData.organization_id === '') {
+      submitData.organization_id = null;
     }
     onSubmit(submitData);
   };
@@ -111,6 +124,27 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData }) => {
               </MenuItem>
             ))}
           </TextField>
+          {isSuperAdmin && (
+            <TextField
+              margin="normal"
+              label="Organizasyon"
+              name="organization_id"
+              select
+              fullWidth
+              value={form.organization_id}
+              onChange={handleChange}
+              helperText="Boş bırakılırsa platform seviyesinde kullanıcı olur"
+            >
+              <MenuItem value="">
+                <em>Organizasyonsuz (Platform)</em>
+              </MenuItem>
+              {organizations.map((org) => (
+                <MenuItem key={org.id} value={org.id}>
+                  {org.name} ({org.type === 'school' ? 'Okul' : 'Taşıma Şirketi'})
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>İptal</Button>

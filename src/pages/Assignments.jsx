@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import AssignmentsTable from '../components/AssignmentsTable';
 import AssignmentModal from '../components/AssignmentModal';
 import {
@@ -9,9 +9,7 @@ import {
   deleteStudentBusAssignment,
   deleteParentStudentRelation
 } from '../services/assignmentService';
-import { fetchStudents } from '../services/studentService';
-import { fetchBuses } from '../services/busService';
-import { fetchUsers } from '../services/userService';
+
 import {
   CircularProgress,
   Box,
@@ -22,56 +20,90 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Button
+  Button,
+  TablePagination,
+  Tabs,
+  Tab
 } from '@mui/material';
 
 const Assignments = () => {
   const [studentBusAssignments, setStudentBusAssignments] = useState([]);
   const [parentStudentRelations, setParentStudentRelations] = useState([]);
-  const [students, setStudents] = useState([]);
-  const [buses, setBuses] = useState([]);
-  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: null, id: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [
-        studentBusData,
-        parentStudentData,
-        studentsData,
-        busesData,
-        usersData
-      ] = await Promise.all([
-        fetchStudentBusAssignments(),
-        fetchParentStudentRelations(),
-        fetchStudents(),
-        fetchBuses(),
-        fetchUsers()
-      ]);
+  // Tab state
+  const [activeTab, setActiveTab] = useState(0);
 
-      setStudentBusAssignments(studentBusData);
-      setParentStudentRelations(parentStudentData);
-      setStudents(studentsData);
-      setBuses(busesData);
-      setUsers(usersData);
+  // Pagination state for student-bus
+  const [sbPage, setSbPage] = useState(0);
+  const [sbRowsPerPage, setSbRowsPerPage] = useState(20);
+  const [sbTotal, setSbTotal] = useState(0);
+
+  // Pagination state for parent-student
+  const [psPage, setPsPage] = useState(0);
+  const [psRowsPerPage, setPsRowsPerPage] = useState(20);
+  const [psTotal, setPsTotal] = useState(0);
+
+  const loadStudentBusAssignments = useCallback(async () => {
+    try {
+      const skip = sbPage * sbRowsPerPage;
+      const data = await fetchStudentBusAssignments(skip, sbRowsPerPage);
+      setStudentBusAssignments(data.items || []);
+      setSbTotal(data.total || 0);
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.detail || 'Veriler yüklenemedi!',
-        severity: 'error'
-      });
-    } finally {
-      setLoading(false);
+      console.error('Error loading student-bus assignments:', error);
+      setStudentBusAssignments([]);
     }
-  };
+  }, [sbPage, sbRowsPerPage]);
+
+  const loadParentStudentRelations = useCallback(async () => {
+    try {
+      const skip = psPage * psRowsPerPage;
+      const data = await fetchParentStudentRelations(skip, psRowsPerPage);
+      setParentStudentRelations(data.items || []);
+      setPsTotal(data.total || 0);
+    } catch (error) {
+      console.error('Error loading parent-student relations:', error);
+      setParentStudentRelations([]);
+    }
+  }, [psPage, psRowsPerPage]);
 
   useEffect(() => {
-    loadData();
-  }, []);
+    const loadAll = async () => {
+      setLoading(true);
+      await Promise.all([
+        loadStudentBusAssignments(),
+        loadParentStudentRelations()
+      ]);
+      setLoading(false);
+    };
+    loadAll();
+  }, [loadStudentBusAssignments, loadParentStudentRelations]);
+
+  const handleTabChange = (event, newValue) => {
+    setActiveTab(newValue);
+  };
+
+  const handleSbChangePage = (event, newPage) => {
+    setSbPage(newPage);
+  };
+
+  const handleSbChangeRowsPerPage = (event) => {
+    setSbRowsPerPage(parseInt(event.target.value, 10));
+    setSbPage(0);
+  };
+
+  const handlePsChangePage = (event, newPage) => {
+    setPsPage(newPage);
+  };
+
+  const handlePsChangeRowsPerPage = (event) => {
+    setPsRowsPerPage(parseInt(event.target.value, 10));
+    setPsPage(0);
+  };
 
   const handleAddAssignment = () => {
     setModalOpen(true);
@@ -86,12 +118,13 @@ const Assignments = () => {
       if (assignmentType === 'student-bus') {
         await assignBusToStudent(formData.student_id, formData.bus_id);
         setSnackbar({ open: true, message: 'Öğrenci-Otobüs ataması başarıyla yapıldı!', severity: 'success' });
+        loadStudentBusAssignments();
       } else {
         await assignParentToStudent(formData.student_id, formData.parent_id);
         setSnackbar({ open: true, message: 'Öğrenci-Veli ilişkisi başarıyla oluşturuldu!', severity: 'success' });
+        loadParentStudentRelations();
       }
       setModalOpen(false);
-      loadData();
     } catch (error) {
       const errorMessage = error.response?.data?.detail || 'Atama yapılamadı!';
       setSnackbar({ open: true, message: errorMessage, severity: 'error' });
@@ -111,11 +144,12 @@ const Assignments = () => {
       if (deleteDialog.type === 'student-bus') {
         await deleteStudentBusAssignment(deleteDialog.id);
         setSnackbar({ open: true, message: 'Atama başarıyla kaldırıldı!', severity: 'success' });
+        loadStudentBusAssignments();
       } else {
         await deleteParentStudentRelation(deleteDialog.id);
         setSnackbar({ open: true, message: 'İlişki başarıyla kaldırıldı!', severity: 'success' });
+        loadParentStudentRelations();
       }
-      loadData();
     } catch (error) {
       setSnackbar({
         open: true,
@@ -139,30 +173,36 @@ const Assignments = () => {
     );
   }
 
-  // Sadece veli rolündeki kullanıcıları filtrele
-  const parents = users.filter(user => user.role === 'veli');
-
   return (
     <>
       <AssignmentsTable
         studentBusAssignments={studentBusAssignments}
         parentStudentRelations={parentStudentRelations}
-        students={students}
-        buses={buses}
-        users={users}
         onAddStudentBus={handleAddAssignment}
         onAddParentStudent={handleAddAssignment}
         onDeleteStudentBus={handleDeleteStudentBus}
         onDeleteParentStudent={handleDeleteParentStudent}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
+
+      {/* Pagination for current tab */}
+      <TablePagination
+        component="div"
+        count={activeTab === 0 ? sbTotal : psTotal}
+        page={activeTab === 0 ? sbPage : psPage}
+        onPageChange={activeTab === 0 ? handleSbChangePage : handlePsChangePage}
+        rowsPerPage={activeTab === 0 ? sbRowsPerPage : psRowsPerPage}
+        onRowsPerPageChange={activeTab === 0 ? handleSbChangeRowsPerPage : handlePsChangeRowsPerPage}
+        rowsPerPageOptions={[10, 20, 50, 100]}
+        labelRowsPerPage="Sayfa başına satır:"
+        labelDisplayedRows={({ from, to, count }) => `${from}-${to} / ${count}`}
       />
 
       <AssignmentModal
         open={modalOpen}
         onClose={handleModalClose}
         onSubmit={handleAssignmentSubmit}
-        students={students}
-        buses={buses}
-        parents={parents}
       />
 
       <Dialog

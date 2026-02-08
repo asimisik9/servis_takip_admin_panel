@@ -4,11 +4,18 @@ import { ADMIN_API_URL } from './config';
 
 const API_URL = `${ADMIN_API_URL}/users`;
 
-export const fetchUsers = async () => {
+/**
+ * Fetch users with pagination
+ * @param {number} skip - Number of items to skip
+ * @param {number} limit - Number of items per page
+ * @returns {Promise<{items: Array, total: number, skip: number, limit: number}>}
+ */
+export const fetchUsers = async (skip = 0, limit = 20) => {
   const response = await axios.get(API_URL, {
     headers: { Authorization: `Bearer ${getToken()}` },
+    params: { skip, limit }
   });
-  return response.data;
+  return response.data; // Returns {items, total, skip, limit}
 };
 
 export const createUser = async (userData) => {
@@ -37,4 +44,4 @@ export const getUserById = async (userId) => {
     headers: { Authorization: `Bearer ${getToken()}` },
   });
   return response.data;
-}
+};

@@ -1,30 +1,45 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
-import { Box, Toolbar } from '@mui/material';
-
-const drawerWidth = 240;
+import { Box, Container, useMediaQuery, useTheme } from '@mui/material';
 
 const MainLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default', width: '100vw' }}>
+    <Box
+      sx={{
+        display: 'flex',
+        minHeight: '100vh',
+        bgcolor: 'background.default',
+        width: '100vw',
+      }}
+    >
       <Header onMenuClick={() => setSidebarOpen(true)} />
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
       <Box
         component="main"
         sx={{
           flexGrow: 1,
-          p: 3,
-          width: '100%',
           minHeight: '100vh',
-          bgcolor: 'background.paper',
-          mt: 8, // AppBar yüksekliği kadar boşluk bırak
-          boxSizing: 'border-box',
+          pt: { xs: 9, sm: 10 }, // AppBar height + spacing
+          pb: 4,
+          px: { xs: 2, sm: 3, md: 4 },
+          transition: 'all 0.3s ease',
         }}
       >
-        {children}
+        <Container
+          maxWidth="xl"
+          disableGutters={isMobile}
+          sx={{
+            height: '100%',
+          }}
+        >
+          {children}
+        </Container>
       </Box>
     </Box>
   );

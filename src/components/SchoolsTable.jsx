@@ -5,12 +5,6 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const SchoolsTable = ({ schools, users, onAdd, onEdit, onDelete }) => {
-  // Contact person ID'sine göre kişi adını bul
-  const getContactPersonName = (contactPersonId) => {
-    const user = users.find(u => u.id === contactPersonId);
-    return user ? user.full_name : 'Bilinmiyor';
-  };
-
   const columns = [
     { field: 'id', headerName: 'ID', width: 80 },
     { field: 'school_name', headerName: 'Okul Adı', flex: 1, minWidth: 200 },
@@ -20,7 +14,13 @@ const SchoolsTable = ({ schools, users, onAdd, onEdit, onDelete }) => {
       headerName: 'İletişim Kişisi', 
       flex: 1, 
       minWidth: 150,
-      valueGetter: (params) => getContactPersonName(params)
+      valueGetter: (value, row) => {
+        // Önce backend'den gelen contact_person_name'i kullan
+        if (row?.contact_person_name) return row.contact_person_name;
+        // Fallback: users listesinden eşleştir
+        const user = users?.find(u => u.id === value);
+        return user ? user.full_name : 'Bilinmiyor';
+      }
     },
     {
       field: 'actions',
