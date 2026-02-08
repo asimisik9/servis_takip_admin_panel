@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { DataGrid } from '@mui/x-data-grid';
 import { Box, Typography, IconButton, Tabs, Tab, Button } from '@mui/material';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -9,14 +9,10 @@ const AssignmentsTable = ({
   onAddStudentBus,
   onAddParentStudent,
   onDeleteStudentBus,
-  onDeleteParentStudent
+  onDeleteParentStudent,
+  activeTab,
+  onTabChange
 }) => {
-  const [tabValue, setTabValue] = useState(0);
-
-  const handleTabChange = (event, newValue) => {
-    setTabValue(newValue);
-  };
-
   // Student-Bus Assignments columns
   const studentBusColumns = [
     { field: 'id', headerName: 'ID', width: 80 },
@@ -105,18 +101,18 @@ const AssignmentsTable = ({
         <Typography variant="h5">Atamalar</Typography>
         <Button
           variant="contained"
-          onClick={tabValue === 0 ? onAddStudentBus : onAddParentStudent}
+          onClick={activeTab === 0 ? onAddStudentBus : onAddParentStudent}
         >
           Yeni Atama
         </Button>
       </Box>
 
-      <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 2 }}>
+      <Tabs value={activeTab} onChange={onTabChange} sx={{ mb: 2 }}>
         <Tab label="Öğrenci-Otobüs Atamaları" />
         <Tab label="Öğrenci-Veli İlişkileri" />
       </Tabs>
 
-      {tabValue === 0 && (
+      {activeTab === 0 && (
         <DataGrid
           rows={studentBusAssignments}
           columns={studentBusColumns}
@@ -132,7 +128,7 @@ const AssignmentsTable = ({
         />
       )}
 
-      {tabValue === 1 && (
+      {activeTab === 1 && (
         <DataGrid
           rows={parentStudentRelations}
           columns={parentStudentColumns}

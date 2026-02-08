@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { getToken, logout } from '../services/authService';
+import { isAuthenticated as hasSession, logout } from '../services/authService';
 
 export const useAuth = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(!!getToken());
+  const [isAuthenticated, setIsAuthenticated] = useState(hasSession());
 
-  const signOut = () => {
-    logout();
+  const signOut = async () => {
+    await logout();
     setIsAuthenticated(false);
   };
 

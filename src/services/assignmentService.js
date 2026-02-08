@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { getToken } from './authService';
+import { buildAuthHeaders } from './authService';
 import { ADMIN_API_URL } from './config';
 
 // Student-Bus Assignments
 export const fetchStudentBusAssignments = async (skip = 0, limit = 20) => {
   const response = await axios.get(`${ADMIN_API_URL}/assignments/student-bus`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
     params: { skip, limit }
   });
   return response.data;
@@ -16,7 +16,7 @@ export const assignBusToStudent = async (studentId, busId) => {
     `${ADMIN_API_URL}/students/${studentId}/assign-bus?bus_id=${busId}`,
     {},
     {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      headers: buildAuthHeaders(),
     }
   );
   return response.data;
@@ -26,7 +26,7 @@ export const deleteStudentBusAssignment = async (assignmentId) => {
   const response = await axios.delete(
     `${ADMIN_API_URL}/assignments/student-bus/${assignmentId}`,
     {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      headers: buildAuthHeaders(),
     }
   );
   return response.data;
@@ -35,7 +35,7 @@ export const deleteStudentBusAssignment = async (assignmentId) => {
 // Parent-Student Relations
 export const fetchParentStudentRelations = async (skip = 0, limit = 20) => {
   const response = await axios.get(`${ADMIN_API_URL}/assignments/parent-student`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
     params: { skip, limit }
   });
   return response.data;
@@ -46,7 +46,7 @@ export const assignParentToStudent = async (studentId, parentId) => {
     `${ADMIN_API_URL}/students/${studentId}/assign-parent?parent_id=${parentId}`,
     {},
     {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      headers: buildAuthHeaders(),
     }
   );
   return response.data;
@@ -56,7 +56,7 @@ export const deleteParentStudentRelation = async (relationId) => {
   const response = await axios.delete(
     `${ADMIN_API_URL}/assignments/parent-student/${relationId}`,
     {
-      headers: { Authorization: `Bearer ${getToken()}` },
+      headers: buildAuthHeaders(),
     }
   );
   return response.data;

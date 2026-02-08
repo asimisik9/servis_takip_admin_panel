@@ -10,11 +10,12 @@ import Assignments from '../pages/Assignments';
 import Organizations from '../pages/Organizations';
 import Login from '../pages/Login';
 import PrivateRoute from './PrivateRoute';
-import { getToken, getUser } from '../services/authService';
+import { isAuthenticated, getUser, initializeAuthInterceptors } from '../services/authService';
+
+initializeAuthInterceptors();
 
 const PublicRoute = ({ children }) => {
-  const token = getToken();
-  return !token ? children : <Navigate to="/" replace />;
+  return !isAuthenticated() ? children : <Navigate to="/" replace />;
 };
 
 const SuperAdminRoute = ({ children }) => {

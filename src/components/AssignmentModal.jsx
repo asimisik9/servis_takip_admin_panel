@@ -175,7 +175,7 @@ const AssignmentModal = ({
           {/* School Selection */}
           <Autocomplete
             options={schools}
-            getOptionLabel={(option) => option.name}
+            getOptionLabel={(option) => option.school_name || option.name || ''}
             value={selectedSchool}
             onChange={(event, newValue) => setSelectedSchool(newValue)}
             loading={loadingSchools}

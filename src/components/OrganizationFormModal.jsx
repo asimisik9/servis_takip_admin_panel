@@ -19,29 +19,20 @@ const OrganizationFormModal = ({ open, onClose, onSubmit, initialData }) => {
     const [formData, setFormData] = useState({
         name: '',
         type: 'school',
-        contact_email: '',
-        contact_phone: '',
-        address: '',
         is_active: true
     });
 
     useEffect(() => {
         if (initialData) {
-            setFormData({
-                name: initialData.name || '',
-                type: initialData.type || 'school',
-                contact_email: initialData.contact_email || '',
-                contact_phone: initialData.contact_phone || '',
-                address: initialData.address || '',
-                is_active: initialData.is_active ?? true
-            });
+                setFormData({
+                    name: initialData.name || '',
+                    type: initialData.type || 'school',
+                    is_active: initialData.is_active ?? true
+                });
         } else {
             setFormData({
                 name: '',
                 type: 'school',
-                contact_email: '',
-                contact_phone: '',
-                address: '',
                 is_active: true
             });
         }
@@ -77,57 +68,34 @@ const OrganizationFormModal = ({ open, onClose, onSubmit, initialData }) => {
                             fullWidth
                         />
 
-                        <FormControl fullWidth required>
-                            <InputLabel>Tip</InputLabel>
-                            <Select
-                                name="type"
-                                value={formData.type}
-                                onChange={handleChange}
-                                label="Tip"
-                            >
-                                <MenuItem value="school">Okul</MenuItem>
-                                <MenuItem value="transport_company">Taşıma Şirketi</MenuItem>
-                            </Select>
-                        </FormControl>
-
-                        <TextField
-                            name="contact_email"
-                            label="İletişim Email"
-                            type="email"
-                            value={formData.contact_email}
-                            onChange={handleChange}
-                            fullWidth
-                        />
-
-                        <TextField
-                            name="contact_phone"
-                            label="Telefon"
-                            value={formData.contact_phone}
-                            onChange={handleChange}
-                            fullWidth
-                        />
-
-                        <TextField
-                            name="address"
-                            label="Adres"
-                            value={formData.address}
-                            onChange={handleChange}
-                            multiline
-                            rows={2}
-                            fullWidth
-                        />
-
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    name="is_active"
-                                    checked={formData.is_active}
+                        {!initialData && (
+                            <FormControl fullWidth required>
+                                <InputLabel>Tip</InputLabel>
+                                <Select
+                                    name="type"
+                                    value={formData.type}
                                     onChange={handleChange}
-                                    color="primary"
-                                />
-                            }
-                            label="Aktif"
-                        />
+                                    label="Tip"
+                                >
+                                    <MenuItem value="school">Okul</MenuItem>
+                                    <MenuItem value="transport_company">Taşıma Şirketi</MenuItem>
+                                </Select>
+                            </FormControl>
+                        )}
+
+                        {initialData && (
+                            <FormControlLabel
+                                control={
+                                    <Switch
+                                        name="is_active"
+                                        checked={formData.is_active}
+                                        onChange={handleChange}
+                                        color="primary"
+                                    />
+                                }
+                                label="Aktif"
+                            />
+                        )}
                     </Box>
                 </DialogContent>
                 <DialogActions>

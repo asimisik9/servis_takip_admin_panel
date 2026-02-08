@@ -100,10 +100,18 @@ const Organizations = () => {
     const handleOrgSubmit = async (formData) => {
         try {
             if (editingOrg) {
-                await updateOrganization(editingOrg.id, formData);
+                const updatePayload = {
+                    name: formData.name,
+                    is_active: formData.is_active,
+                };
+                await updateOrganization(editingOrg.id, updatePayload);
                 setSnackbar({ open: true, message: 'Organizasyon başarıyla güncellendi!', severity: 'success' });
             } else {
-                await createOrganization(formData);
+                const createPayload = {
+                    name: formData.name,
+                    type: formData.type,
+                };
+                await createOrganization(createPayload);
                 setSnackbar({ open: true, message: 'Organizasyon başarıyla eklendi!', severity: 'success' });
             }
             setModalOpen(false);

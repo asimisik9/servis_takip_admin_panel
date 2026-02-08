@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken } from './authService';
+import { buildAuthHeaders } from './authService';
 import { ADMIN_API_URL } from './config';
 
 const API_URL = `${ADMIN_API_URL}/organizations`;
@@ -12,7 +12,7 @@ const API_URL = `${ADMIN_API_URL}/organizations`;
  */
 export const fetchOrganizations = async (skip = 0, limit = 20) => {
     const response = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: buildAuthHeaders(),
         params: { skip, limit }
     });
     return response.data;
@@ -23,7 +23,7 @@ export const fetchOrganizations = async (skip = 0, limit = 20) => {
  */
 export const fetchAllOrganizations = async () => {
     const response = await axios.get(API_URL, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: buildAuthHeaders(),
         params: { skip: 0, limit: 1000 }
     });
     return response.data.items || [];
@@ -31,28 +31,28 @@ export const fetchAllOrganizations = async () => {
 
 export const createOrganization = async (orgData) => {
     const response = await axios.post(API_URL, orgData, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: buildAuthHeaders(),
     });
     return response.data;
 };
 
 export const updateOrganization = async (orgId, orgData) => {
     const response = await axios.put(`${API_URL}/${orgId}`, orgData, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: buildAuthHeaders(),
     });
     return response.data;
 };
 
 export const deleteOrganization = async (orgId) => {
     const response = await axios.delete(`${API_URL}/${orgId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: buildAuthHeaders(),
     });
     return response.data;
 };
 
 export const getOrganizationById = async (orgId) => {
     const response = await axios.get(`${API_URL}/${orgId}`, {
-        headers: { Authorization: `Bearer ${getToken()}` },
+        headers: buildAuthHeaders(),
     });
     return response.data;
 };

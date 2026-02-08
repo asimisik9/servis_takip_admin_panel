@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken } from './authService';
+import { buildAuthHeaders } from './authService';
 import { ADMIN_API_URL } from './config';
 
 const API_URL = `${ADMIN_API_URL}/students`;
@@ -15,7 +15,7 @@ export const fetchStudents = async (skip = 0, limit = 20, schoolId = null) => {
   if (schoolId) params.school_id = schoolId;
 
   const response = await axios.get(API_URL, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
     params
   });
   return response.data;
@@ -23,28 +23,28 @@ export const fetchStudents = async (skip = 0, limit = 20, schoolId = null) => {
 
 export const createStudent = async (studentData) => {
   const response = await axios.post(API_URL, studentData, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
   });
   return response.data;
 };
 
 export const updateStudent = async (studentId, studentData) => {
   const response = await axios.put(`${API_URL}/${studentId}`, studentData, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
   });
   return response.data;
 };
 
 export const deleteStudent = async (studentId) => {
   const response = await axios.delete(`${API_URL}/${studentId}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
   });
   return response.data;
 };
 
 export const getStudentById = async (studentId) => {
   const response = await axios.get(`${API_URL}/${studentId}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
   });
   return response.data;
 };

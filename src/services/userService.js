@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken } from './authService';
+import { buildAuthHeaders } from './authService';
 import { ADMIN_API_URL } from './config';
 
 const API_URL = `${ADMIN_API_URL}/users`;
@@ -12,7 +12,7 @@ const API_URL = `${ADMIN_API_URL}/users`;
  */
 export const fetchUsers = async (skip = 0, limit = 20) => {
   const response = await axios.get(API_URL, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
     params: { skip, limit }
   });
   return response.data; // Returns {items, total, skip, limit}
@@ -20,28 +20,28 @@ export const fetchUsers = async (skip = 0, limit = 20) => {
 
 export const createUser = async (userData) => {
   const response = await axios.post(API_URL, userData, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
   });
   return response.data;
 };
 
 export const updateUser = async (userId, userData) => {
   const response = await axios.put(`${API_URL}/${userId}`, userData, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
   });
   return response.data;
 };
 
 export const deleteUser = async (userId) => {
   const response = await axios.delete(`${API_URL}/${userId}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
   });
   return response.data;
 };
 
 export const getUserById = async (userId) => {
   const response = await axios.get(`${API_URL}/${userId}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+    headers: buildAuthHeaders(),
   });
   return response.data;
 };

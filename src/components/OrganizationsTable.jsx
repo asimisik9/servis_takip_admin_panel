@@ -49,8 +49,6 @@ const OrganizationsTable = ({ organizations, onAdd, onEdit, onDelete, loading })
                         <TableRow>
                             <TableCell>Ad</TableCell>
                             <TableCell>Tip</TableCell>
-                            <TableCell>İletişim Email</TableCell>
-                            <TableCell>Telefon</TableCell>
                             <TableCell>Durum</TableCell>
                             <TableCell align="right">İşlemler</TableCell>
                         </TableRow>
@@ -58,7 +56,7 @@ const OrganizationsTable = ({ organizations, onAdd, onEdit, onDelete, loading })
                     <TableBody>
                         {organizations.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} align="center">
+                                <TableCell colSpan={4} align="center">
                                     <Typography variant="body2" color="text.secondary">
                                         Henüz organizasyon bulunmamaktadır.
                                     </Typography>
@@ -83,8 +81,6 @@ const OrganizationsTable = ({ organizations, onAdd, onEdit, onDelete, loading })
                                                 variant="outlined"
                                             />
                                         </TableCell>
-                                        <TableCell>{org.contact_email || '-'}</TableCell>
-                                        <TableCell>{org.contact_phone || '-'}</TableCell>
                                         <TableCell>
                                             <Chip
                                                 label={org.is_active ? 'Aktif' : 'Pasif'}
