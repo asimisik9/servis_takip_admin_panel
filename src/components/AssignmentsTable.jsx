@@ -11,7 +11,8 @@ const AssignmentsTable = ({
   onDeleteStudentBus,
   onDeleteParentStudent,
   activeTab,
-  onTabChange
+  onTabChange,
+  canManageParentRelations = true
 }) => {
   // Student-Bus Assignments columns
   const studentBusColumns = [
@@ -76,8 +77,11 @@ const AssignmentsTable = ({
         const parent = row?.parent;
         return parent ? `${parent.full_name} (${parent.email || parent.phone_number})` : 'Bilinmiyor';
       }
-    },
-    {
+    }
+  ];
+
+  if (canManageParentRelations) {
+    parentStudentColumns.push({
       field: 'actions',
       headerName: 'İşlemler',
       width: 100,
@@ -92,8 +96,8 @@ const AssignmentsTable = ({
           <DeleteIcon fontSize="small" />
         </IconButton>
       ),
-    },
-  ];
+    });
+  }
 
   return (
     <Box sx={{ width: '100%', bgcolor: 'background.paper', p: 2, borderRadius: 2, boxShadow: 2 }}>
@@ -102,6 +106,7 @@ const AssignmentsTable = ({
         <Button
           variant="contained"
           onClick={activeTab === 0 ? onAddStudentBus : onAddParentStudent}
+          disabled={activeTab === 1 && !canManageParentRelations}
         >
           Yeni Atama
         </Button>
@@ -116,13 +121,8 @@ const AssignmentsTable = ({
         <DataGrid
           rows={studentBusAssignments}
           columns={studentBusColumns}
-          initialState={{
-            pagination: {
-              paginationModel: { pageSize: 10 },
-            },
-          }}
-          pageSizeOptions={[10, 20, 50]}
           disableSelectionOnClick
+          hideFooter
           autoHeight
           sx={{ minWidth: 360 }}
         />
@@ -132,13 +132,8 @@ const AssignmentsTable = ({
         <DataGrid
           rows={parentStudentRelations}
           columns={parentStudentColumns}
-          initialState={{
-            pagination: {
-              paginationModel: { pageSize: 10 },
-            },
-          }}
-          pageSizeOptions={[10, 20, 50]}
           disableSelectionOnClick
+          hideFooter
           autoHeight
           sx={{ minWidth: 360 }}
         />

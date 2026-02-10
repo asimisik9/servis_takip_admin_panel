@@ -103,13 +103,8 @@ const UsersTable = ({ users, onAdd, onEdit, onDelete }) => {
       <DataGrid
         rows={users}
         columns={columns}
-        initialState={{
-          pagination: {
-            paginationModel: { pageSize: 10 },
-          },
-        }}
-        pageSizeOptions={[10, 20, 50]}
         disableSelectionOnClick
+        hideFooter
         autoHeight
         sx={{ minWidth: 360 }}
       />

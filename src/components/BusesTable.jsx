@@ -87,13 +87,8 @@ const BusesTable = ({ buses, schools, drivers, onAdd, onEdit, onDelete }) => {
       <DataGrid
         rows={buses}
         columns={columns}
-        initialState={{
-          pagination: {
-            paginationModel: { pageSize: 10 },
-          },
-        }}
-        pageSizeOptions={[10, 20, 50]}
         disableSelectionOnClick
+        hideFooter
         autoHeight
         sx={{ minWidth: 360 }}
       />

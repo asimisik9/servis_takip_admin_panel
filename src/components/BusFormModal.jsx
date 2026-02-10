@@ -1,12 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box } from '@mui/material';
+import { getUser } from '../services/authService';
 
-const BusFormModal = ({ open, onClose, onSubmit, initialData, schools, drivers }) => {
+const BusFormModal = ({ open, onClose, onSubmit, initialData, schools, drivers, organizations = [] }) => {
+  const currentUser = getUser();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+
   const [form, setForm] = useState({
     plate_number: '',
     capacity: '',
     school_id: '',
-    current_driver_id: ''
+    current_driver_id: '',
+    organization_id: ''
   });
 
   useEffect(() => {
@@ -15,14 +20,16 @@ const BusFormModal = ({ open, onClose, onSubmit, initialData, schools, drivers }
         plate_number: initialData.plate_number || '',
         capacity: initialData.capacity || '',
         school_id: initialData.school_id || '',
-        current_driver_id: initialData.current_driver_id || ''
+        current_driver_id: initialData.current_driver_id || '',
+        organization_id: initialData.organization_id || ''
       });
     } else {
       setForm({
         plate_number: '',
         capacity: '',
         school_id: '',
-        current_driver_id: ''
+        current_driver_id: '',
+        organization_id: ''
       });
     }
   }, [initialData, open]);
@@ -39,7 +46,16 @@ const BusFormModal = ({ open, onClose, onSubmit, initialData, schools, drivers }
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form);
+    const submitData = {
+      ...form,
+      current_driver_id: form.current_driver_id || null,
+    };
+    if (isSuperAdmin) {
+      submitData.organization_id = form.organization_id || null;
+    } else {
+      delete submitData.organization_id;
+    }
+    onSubmit(submitData);
   };
 
   // Sadece şoför rolündeki kullanıcıları filtrele
@@ -95,17 +111,44 @@ const BusFormModal = ({ open, onClose, onSubmit, initialData, schools, drivers }
               </MenuItem>
             )}
           </TextField>
+          {isSuperAdmin && (
+            <TextField
+              margin="normal"
+              label="Organizasyon"
+              name="organization_id"
+              select
+              fullWidth
+              required
+              value={form.organization_id}
+              onChange={handleChange}
+              helperText="Otobüsün bağlı olduğu taşıyıcı organizasyon"
+            >
+              {organizations && organizations.length > 0 ? (
+                organizations.map((org) => (
+                  <MenuItem key={org.id} value={org.id}>
+                    {org.name}
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled value="">
+                  Organizasyon bulunamadı
+                </MenuItem>
+              )}
+            </TextField>
+          )}
           <TextField
             margin="normal"
             label="Şoför"
             name="current_driver_id"
             select
             fullWidth
-            required
             value={form.current_driver_id}
             onChange={handleChange}
-            helperText="Otobüse atanacak şoför"
+            helperText="Otobüse atanacak şoför (opsiyonel)"
           >
+            <MenuItem value="">
+              <em>Atanmamış</em>
+            </MenuItem>
             {driverUsers && driverUsers.length > 0 ? (
               driverUsers.map((driver) => (
                 <MenuItem key={driver.id} value={driver.id}>

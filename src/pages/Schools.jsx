@@ -53,7 +53,7 @@ const Schools = () => {
 
   const loadUsers = async () => {
     try {
-      const data = await fetchUsers(0, 1000);
+      const data = await fetchUsers(0, 200);
       setUsers(data.items || []);
     } catch (error) {
       setSnackbar({

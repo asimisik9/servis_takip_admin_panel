@@ -21,6 +21,7 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
     password: '',
     organization_id: ''
   });
+  const requiresOrganization = isSuperAdmin && form.role === 'admin';
 
   useEffect(() => {
     if (initialData) {
@@ -57,8 +58,13 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
     // Only send organization_id if super_admin
     if (!isSuperAdmin) {
       delete submitData.organization_id;
-    } else if (submitData.organization_id === '') {
-      submitData.organization_id = null;
+    } else {
+      if (requiresOrganization && !submitData.organization_id) {
+        return;
+      }
+      if (submitData.organization_id === '') {
+        submitData.organization_id = null;
+      }
     }
     onSubmit(submitData);
   };
@@ -131,13 +137,16 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
               name="organization_id"
               select
               fullWidth
+              required={requiresOrganization}
               value={form.organization_id}
               onChange={handleChange}
-              helperText="Boş bırakılırsa platform seviyesinde kullanıcı olur"
+              helperText={requiresOrganization ? "Admin rolü için organizasyon zorunludur" : "Sadece super_admin organizasyonsuz olabilir"}
             >
-              <MenuItem value="">
-                <em>Organizasyonsuz (Platform)</em>
-              </MenuItem>
+              {form.role === 'super_admin' && (
+                <MenuItem value="">
+                  <em>Organizasyonsuz (Platform)</em>
+                </MenuItem>
+              )}
               {organizations.map((org) => (
                 <MenuItem key={org.id} value={org.id}>
                   {org.name} ({org.type === 'school' ? 'Okul' : 'Taşıma Şirketi'})

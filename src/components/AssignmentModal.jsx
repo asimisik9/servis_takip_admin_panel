@@ -25,8 +25,9 @@ const AssignmentModal = ({
   open,
   onClose,
   onSubmit,
+  canCreateParentRelation = true,
 }) => {
-  const [assignmentType, setAssignmentType] = useState('student-bus'); // 'student-bus' or 'parent-student'
+  const [assignmentType, setAssignmentType] = useState('student-bus');
 
   // Data States
   const [schools, setSchools] = useState([]);
@@ -49,7 +50,10 @@ const AssignmentModal = ({
   useEffect(() => {
     if (open) {
       loadSchools();
-      loadParents(); // Load parents once or implement search later
+      if (canCreateParentRelation) {
+        loadParents(); // Load parents once or implement search later
+      }
+      setAssignmentType('student-bus');
     } else {
       // Reset states on close
       setSelectedSchool(null);
@@ -60,7 +64,7 @@ const AssignmentModal = ({
       setBuses([]);
       setAssignmentType('student-bus');
     }
-  }, [open]);
+  }, [open, canCreateParentRelation]);
 
   // Fetch data when school changes
   useEffect(() => {
@@ -95,8 +99,8 @@ const AssignmentModal = ({
     try {
       setLoadingData(true);
       const [studentsData, busesData] = await Promise.all([
-        fetchStudents(0, 1000, schoolId), // Fetch students for this school
-        fetchBuses(0, 1000, schoolId)      // Fetch buses for this school
+        fetchStudents(0, 200, schoolId), // Fetch students for this school
+        fetchBuses(0, 200, schoolId)     // Fetch buses for this school
       ]);
       setStudents(studentsData.items || []);
       setBuses(busesData.items || []);
@@ -110,8 +114,8 @@ const AssignmentModal = ({
   const loadParents = async () => {
     try {
       setLoadingParents(true);
-      // TODO: Implement proper parent search/pagination. For now limiting to 1000
-      const data = await fetchUsers(0, 1000);
+      // TODO: Implement proper parent search/pagination.
+      const data = await fetchUsers(0, 200);
       const parentUsers = (data.items || []).filter(u => u.role === 'veli');
       setParents(parentUsers);
     } catch (error) {
@@ -123,6 +127,9 @@ const AssignmentModal = ({
 
   const handleTypeChange = (event, newType) => {
     if (newType !== null) {
+      if (!canCreateParentRelation && newType === 'parent-student') {
+        return;
+      }
       setAssignmentType(newType);
       // Optional: Reset selections when type changes?
       // setSelectedStudent(null);
@@ -165,10 +172,12 @@ const AssignmentModal = ({
                 <DirectionsBusIcon sx={{ mr: 1 }} />
                 Öğrenci-Otobüs
               </ToggleButton>
-              <ToggleButton value="parent-student" aria-label="öğrenci-veli">
-                <FamilyRestroomIcon sx={{ mr: 1 }} />
-                Öğrenci-Veli
-              </ToggleButton>
+              {canCreateParentRelation && (
+                <ToggleButton value="parent-student" aria-label="öğrenci-veli">
+                  <FamilyRestroomIcon sx={{ mr: 1 }} />
+                  Öğrenci-Veli
+                </ToggleButton>
+              )}
             </ToggleButtonGroup>
           </Box>
 

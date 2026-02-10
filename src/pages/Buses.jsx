@@ -4,6 +4,8 @@ import BusFormModal from '../components/BusFormModal';
 import { fetchBuses, createBus, updateBus, deleteBus } from '../services/busService';
 import { fetchSchools } from '../services/schoolService';
 import { fetchUsers } from '../services/userService';
+import { fetchAllOrganizations } from '../services/organizationService';
+import { getUser } from '../services/authService';
 import {
   CircularProgress,
   Box,
@@ -19,9 +21,13 @@ import {
 } from '@mui/material';
 
 const Buses = () => {
+  const currentUser = getUser();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+
   const [buses, setBuses] = useState([]);
   const [schools, setSchools] = useState([]);
   const [drivers, setDrivers] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBus, setEditingBus] = useState(null);
@@ -55,7 +61,7 @@ const Buses = () => {
 
   const loadSchools = async () => {
     try {
-      const data = await fetchSchools(0, 1000);
+      const data = await fetchSchools(0, 200);
       setSchools(data.items || []);
     } catch (error) {
       setSnackbar({
@@ -69,7 +75,7 @@ const Buses = () => {
 
   const loadDrivers = async () => {
     try {
-      const data = await fetchUsers(0, 1000);
+      const data = await fetchUsers(0, 200);
       setDrivers(data.items || []);
     } catch (error) {
       setSnackbar({
@@ -85,7 +91,12 @@ const Buses = () => {
     loadBuses();
     loadSchools();
     loadDrivers();
-  }, [loadBuses]);
+    if (isSuperAdmin) {
+      fetchAllOrganizations()
+        .then((orgs) => setOrganizations((orgs || []).filter((org) => org.type === 'transport_company')))
+        .catch(() => setOrganizations([]));
+    }
+  }, [loadBuses, isSuperAdmin]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -193,6 +204,7 @@ const Buses = () => {
         initialData={editingBus}
         schools={schools}
         drivers={drivers}
+        organizations={organizations}
       />
 
       <Dialog

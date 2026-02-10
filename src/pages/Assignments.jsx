@@ -9,6 +9,7 @@ import {
   deleteStudentBusAssignment,
   deleteParentStudentRelation
 } from '../services/assignmentService';
+import { getUser } from '../services/authService';
 
 import {
   CircularProgress,
@@ -25,6 +26,12 @@ import {
   } from '@mui/material';
 
 const Assignments = () => {
+  const currentUser = getUser();
+  const canManageParentRelations = !(
+    currentUser?.role === 'admin' &&
+    currentUser?.organization?.type === 'transport_company'
+  );
+
   const [studentBusAssignments, setStudentBusAssignments] = useState([]);
   const [parentStudentRelations, setParentStudentRelations] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -104,6 +111,14 @@ const Assignments = () => {
   };
 
   const handleAddAssignment = () => {
+    if (activeTab === 1 && !canManageParentRelations) {
+      setSnackbar({
+        open: true,
+        message: 'Taşıma şirketi adminleri öğrenci-veli ilişkisi oluşturamaz.',
+        severity: 'warning'
+      });
+      return;
+    }
     setModalOpen(true);
   };
 
@@ -118,6 +133,14 @@ const Assignments = () => {
         setSnackbar({ open: true, message: 'Öğrenci-Otobüs ataması başarıyla yapıldı!', severity: 'success' });
         loadStudentBusAssignments();
       } else {
+        if (!canManageParentRelations) {
+          setSnackbar({
+            open: true,
+            message: 'Taşıma şirketi adminleri öğrenci-veli ilişkisi oluşturamaz.',
+            severity: 'warning'
+          });
+          return;
+        }
         await assignParentToStudent(formData.student_id, formData.parent_id);
         setSnackbar({ open: true, message: 'Öğrenci-Veli ilişkisi başarıyla oluşturuldu!', severity: 'success' });
         loadParentStudentRelations();
@@ -144,6 +167,14 @@ const Assignments = () => {
         setSnackbar({ open: true, message: 'Atama başarıyla kaldırıldı!', severity: 'success' });
         loadStudentBusAssignments();
       } else {
+        if (!canManageParentRelations) {
+          setSnackbar({
+            open: true,
+            message: 'Taşıma şirketi adminleri öğrenci-veli ilişkisi silemez.',
+            severity: 'warning'
+          });
+          return;
+        }
         await deleteParentStudentRelation(deleteDialog.id);
         setSnackbar({ open: true, message: 'İlişki başarıyla kaldırıldı!', severity: 'success' });
         loadParentStudentRelations();
@@ -182,6 +213,7 @@ const Assignments = () => {
         onDeleteParentStudent={handleDeleteParentStudent}
         activeTab={activeTab}
         onTabChange={handleTabChange}
+        canManageParentRelations={canManageParentRelations}
       />
 
       {/* Pagination for current tab */}
@@ -201,6 +233,7 @@ const Assignments = () => {
         open={modalOpen}
         onClose={handleModalClose}
         onSubmit={handleAssignmentSubmit}
+        canCreateParentRelation={canManageParentRelations}
       />
 
       <Dialog
