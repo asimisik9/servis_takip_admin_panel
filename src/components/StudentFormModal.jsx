@@ -1,10 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box } from '@mui/material';
+import { getUser } from '../services/authService';
 
-const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => {
+const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools, organizations = [] }) => {
+  const currentUser = getUser();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
+
   const [form, setForm] = useState({
     full_name: '',
     student_number: '',
+    organization_id: '',
     school_id: '',
     address: ''
   });
@@ -14,6 +19,7 @@ const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => 
       setForm({
         full_name: initialData.full_name || '',
         student_number: initialData.student_number || '',
+        organization_id: initialData.organization_id || '',
         school_id: initialData.school_id || '',
         address: initialData.address || ''
       });
@@ -21,6 +27,7 @@ const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => 
       setForm({
         full_name: '',
         student_number: '',
+        organization_id: '',
         school_id: '',
         address: ''
       });
@@ -33,7 +40,20 @@ const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => 
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form);
+    const submitData = {
+      ...form,
+      school_id: form.school_id || null
+    };
+
+    if (isSuperAdmin) {
+      if (!submitData.organization_id) {
+        return;
+      }
+    } else {
+      delete submitData.organization_id;
+    }
+
+    onSubmit(submitData);
   };
 
   return (
@@ -60,6 +80,53 @@ const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => 
             value={form.student_number}
             onChange={handleChange}
           />
+
+          {isSuperAdmin && (
+            <TextField
+              margin="normal"
+              label="Organizasyon"
+              name="organization_id"
+              select
+              fullWidth
+              required
+              value={form.organization_id}
+              onChange={handleChange}
+              helperText="Super admin için organizasyon seçimi zorunludur"
+            >
+              {organizations.map((org) => (
+                <MenuItem key={org.id} value={org.id}>
+                  {org.name} ({org.type === 'school' ? 'Okul' : 'Taşıma Şirketi'})
+                </MenuItem>
+              ))}
+            </TextField>
+          )}
+
+          <TextField
+            margin="normal"
+            label="Okul"
+            name="school_id"
+            select
+            fullWidth
+            value={form.school_id}
+            onChange={handleChange}
+            helperText="Opsiyonel"
+          >
+            <MenuItem value="">
+              <em>Seçilmedi</em>
+            </MenuItem>
+            {schools && schools.length > 0 ? (
+              schools.map((school) => (
+                <MenuItem key={school.id} value={school.id}>
+                  {school.school_name}
+                </MenuItem>
+              ))
+            ) : (
+              <MenuItem disabled value="__no_school__">
+                Okul bulunamadı
+              </MenuItem>
+            )}
+          </TextField>
+
           <TextField
             margin="normal"
             label="Adres"
@@ -71,29 +138,6 @@ const StudentFormModal = ({ open, onClose, onSubmit, initialData, schools }) => 
             onChange={handleChange}
             helperText="Google Maps formatında açık adres giriniz"
           />
-          <TextField
-            margin="normal"
-            label="Okul"
-            name="school_id"
-            select
-            fullWidth
-            required
-            value={form.school_id}
-            onChange={handleChange}
-            helperText="Öğrencinin kayıtlı olduğu okul"
-          >
-            {schools && schools.length > 0 ? (
-              schools.map((school) => (
-                <MenuItem key={school.id} value={school.id}>
-                  {school.school_name}
-                </MenuItem>
-              ))
-            ) : (
-              <MenuItem disabled value="">
-                Okul bulunamadı
-              </MenuItem>
-            )}
-          </TextField>
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose}>İptal</Button>

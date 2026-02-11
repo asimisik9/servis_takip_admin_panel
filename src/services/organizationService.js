@@ -22,11 +22,33 @@ export const fetchOrganizations = async (skip = 0, limit = 20) => {
  * Fetch all organizations (for dropdowns, no pagination)
  */
 export const fetchAllOrganizations = async () => {
-    const response = await axios.get(API_URL, {
-        headers: buildAuthHeaders(),
-        params: { skip: 0, limit: 1000 }
-    });
-    return response.data.items || [];
+    const allOrganizations = [];
+    const pageSize = 500;
+    let skip = 0;
+    let total = null;
+
+    while (total === null || skip < total) {
+        const response = await axios.get(API_URL, {
+            headers: buildAuthHeaders(),
+            params: { skip, limit: pageSize }
+        });
+
+        const payload = response.data;
+        const items = Array.isArray(payload) ? payload : (payload?.items || []);
+        allOrganizations.push(...items);
+
+        if (Array.isArray(payload)) {
+            break;
+        }
+
+        total = typeof payload?.total === 'number' ? payload.total : allOrganizations.length;
+        if (items.length === 0) {
+            break;
+        }
+        skip += items.length;
+    }
+
+    return allOrganizations;
 };
 
 export const createOrganization = async (orgData) => {

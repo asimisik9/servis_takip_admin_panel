@@ -15,8 +15,30 @@ import {
   DialogContentText,
   DialogActions,
   Button,
-  TablePagination
+  TablePagination,
+  TextField,
+  MenuItem
 } from '@mui/material';
+
+const extractApiErrorMessage = (error, fallbackMessage) => {
+  const detail = error?.response?.data?.detail;
+  if (!detail) {
+    return fallbackMessage;
+  }
+  if (typeof detail === 'string') {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    const messages = detail
+      .map((item) => item?.msg || item?.message)
+      .filter(Boolean);
+    return messages.length > 0 ? messages.join(' | ') : fallbackMessage;
+  }
+  if (typeof detail === 'object') {
+    return detail.message || fallbackMessage;
+  }
+  return fallbackMessage;
+};
 
 const Users = () => {
   const [users, setUsers] = useState([]);
@@ -33,18 +55,33 @@ const Users = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
+  const [organizationFilter, setOrganizationFilter] = useState('');
+
+  const loadOrganizations = useCallback(async () => {
+    if (!isSuperAdmin) {
+      setOrganizations([]);
+      return;
+    }
+
+    try {
+      const orgs = await fetchAllOrganizations();
+      setOrganizations(orgs || []);
+    } catch {
+      setOrganizations([]);
+    }
+  }, [isSuperAdmin]);
 
   const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
       const skip = page * rowsPerPage;
-      const data = await fetchUsers(skip, rowsPerPage);
+      const data = await fetchUsers(skip, rowsPerPage, organizationFilter || null);
       setUsers(data.items || []);
       setTotalCount(data.total || 0);
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.response?.data?.detail || 'Kullanıcılar yüklenemedi!',
+        message: extractApiErrorMessage(error, 'Kullanıcılar yüklenemedi!'),
         severity: 'error'
       });
       setUsers([]);
@@ -52,16 +89,15 @@ const Users = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, organizationFilter]);
 
   useEffect(() => {
     loadUsers();
-    if (isSuperAdmin) {
-      fetchAllOrganizations()
-        .then(orgs => setOrganizations(orgs))
-        .catch(() => setOrganizations([]));
-    }
   }, [loadUsers]);
+
+  useEffect(() => {
+    loadOrganizations();
+  }, [loadOrganizations]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -72,13 +108,24 @@ const Users = () => {
     setPage(0);
   };
 
+  const handleOrganizationFilterChange = (event) => {
+    setOrganizationFilter(event.target.value);
+    setPage(0);
+  };
+
   const handleAddUser = () => {
     setEditingUser(null);
+    if (isSuperAdmin && organizations.length === 0) {
+      loadOrganizations();
+    }
     setModalOpen(true);
   };
 
   const handleEditUser = (user) => {
     setEditingUser(user);
+    if (isSuperAdmin && organizations.length === 0) {
+      loadOrganizations();
+    }
     setModalOpen(true);
   };
 
@@ -94,7 +141,7 @@ const Users = () => {
     } catch (error) {
       setSnackbar({
         open: true,
-        message: error.response?.data?.detail || 'Kullanıcı silinemedi!',
+        message: extractApiErrorMessage(error, 'Kullanıcı silinemedi!'),
         severity: 'error'
       });
     } finally {
@@ -120,8 +167,10 @@ const Users = () => {
       setEditingUser(null);
       loadUsers();
     } catch (error) {
-      const errorMessage = error.response?.data?.detail ||
-        (editingUser ? 'Kullanıcı güncellenemedi!' : 'Kullanıcı eklenemedi!');
+      const errorMessage = extractApiErrorMessage(
+        error,
+        editingUser ? 'Kullanıcı güncellenemedi!' : 'Kullanıcı eklenemedi!'
+      );
       setSnackbar({ open: true, message: errorMessage, severity: 'error' });
     }
   };
@@ -140,6 +189,25 @@ const Users = () => {
 
   return (
     <>
+      {isSuperAdmin && (
+        <Box sx={{ mb: 2, maxWidth: 420 }}>
+          <TextField
+            select
+            fullWidth
+            label="Organizasyona Göre Filtrele"
+            value={organizationFilter}
+            onChange={handleOrganizationFilterChange}
+          >
+            <MenuItem value="">Tümü</MenuItem>
+            {organizations.map((org) => (
+              <MenuItem key={org.id} value={org.id}>
+                {org.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      )}
+
       <UsersTable
         users={users}
         onAdd={handleAddUser}

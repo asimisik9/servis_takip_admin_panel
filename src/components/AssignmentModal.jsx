@@ -6,13 +6,11 @@ import {
   DialogActions,
   Button,
   TextField,
-  MenuItem,
   Box,
   ToggleButtonGroup,
   ToggleButton,
   CircularProgress,
   Autocomplete,
-  Alert
 } from '@mui/material';
 import DirectionsBusIcon from '@mui/icons-material/DirectionsBus';
 import FamilyRestroomIcon from '@mui/icons-material/FamilyRestroom';
@@ -26,36 +24,36 @@ const AssignmentModal = ({
   onClose,
   onSubmit,
   canCreateParentRelation = true,
+  organizationFilter = null,
 }) => {
   const [assignmentType, setAssignmentType] = useState('student-bus');
 
-  // Data States
   const [schools, setSchools] = useState([]);
   const [students, setStudents] = useState([]);
   const [buses, setBuses] = useState([]);
   const [parents, setParents] = useState([]);
 
-  // Selection States
   const [selectedSchool, setSelectedSchool] = useState(null);
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [selectedBus, setSelectedBus] = useState(null);
   const [selectedParent, setSelectedParent] = useState(null);
 
-  // Loading States
   const [loadingSchools, setLoadingSchools] = useState(false);
   const [loadingData, setLoadingData] = useState(false);
   const [loadingParents, setLoadingParents] = useState(false);
 
-  // Fetch schools when modal opens
   useEffect(() => {
     if (open) {
+      setSelectedSchool(null);
+      setSelectedStudent(null);
+      setSelectedBus(null);
+      setSelectedParent(null);
       loadSchools();
       if (canCreateParentRelation) {
-        loadParents(); // Load parents once or implement search later
+        loadParents();
       }
       setAssignmentType('student-bus');
     } else {
-      // Reset states on close
       setSelectedSchool(null);
       setSelectedStudent(null);
       setSelectedBus(null);
@@ -64,30 +62,20 @@ const AssignmentModal = ({
       setBuses([]);
       setAssignmentType('student-bus');
     }
-  }, [open, canCreateParentRelation]);
+  }, [open, canCreateParentRelation, organizationFilter]);
 
-  // Fetch data when school changes
   useEffect(() => {
-    if (selectedSchool) {
-      loadSchoolData(selectedSchool.id);
-    } else {
-      setStudents([]);
-      setBuses([]);
-      setSelectedStudent(null);
-      setSelectedBus(null);
+    if (!open) {
+      return;
     }
-  }, [selectedSchool]);
+    loadData(selectedSchool?.id || null);
+  }, [selectedSchool, open, organizationFilter]);
 
   const loadSchools = async () => {
     try {
       setLoadingSchools(true);
-      const data = await fetchSchools(0, 100); // Fetch first 100 schools
+      const data = await fetchSchools(0, 100, organizationFilter);
       setSchools(data.items || []);
-
-      // If only one school (e.g., admin role), select it automatically
-      if (data.items && data.items.length === 1) {
-        setSelectedSchool(data.items[0]);
-      }
     } catch (error) {
       console.error('Error loading schools:', error);
     } finally {
@@ -95,17 +83,17 @@ const AssignmentModal = ({
     }
   };
 
-  const loadSchoolData = async (schoolId) => {
+  const loadData = async (schoolId = null) => {
     try {
       setLoadingData(true);
       const [studentsData, busesData] = await Promise.all([
-        fetchStudents(0, 200, schoolId), // Fetch students for this school
-        fetchBuses(0, 200, schoolId)     // Fetch buses for this school
+        fetchStudents(0, 200, schoolId, organizationFilter),
+        fetchBuses(0, 200, schoolId, organizationFilter)
       ]);
       setStudents(studentsData.items || []);
       setBuses(busesData.items || []);
     } catch (error) {
-      console.error('Error loading school data:', error);
+      console.error('Error loading assignment data:', error);
     } finally {
       setLoadingData(false);
     }
@@ -114,8 +102,7 @@ const AssignmentModal = ({
   const loadParents = async () => {
     try {
       setLoadingParents(true);
-      // TODO: Implement proper parent search/pagination.
-      const data = await fetchUsers(0, 200);
+      const data = await fetchUsers(0, 200, organizationFilter);
       const parentUsers = (data.items || []).filter(u => u.role === 'veli');
       setParents(parentUsers);
     } catch (error) {
@@ -127,14 +114,7 @@ const AssignmentModal = ({
 
   const handleTypeChange = (event, newType) => {
     if (newType !== null) {
-      if (!canCreateParentRelation && newType === 'parent-student') {
-        return;
-      }
       setAssignmentType(newType);
-      // Optional: Reset selections when type changes?
-      // setSelectedStudent(null);
-      // setSelectedBus(null);
-      // setSelectedParent(null);
     }
   };
 
@@ -146,13 +126,14 @@ const AssignmentModal = ({
         student_id: selectedStudent.id,
         bus_id: selectedBus.id
       });
-    } else {
-      if (!selectedStudent || !selectedParent) return;
-      onSubmit(assignmentType, {
-        student_id: selectedStudent.id,
-        parent_id: selectedParent.id
-      });
+      return;
     }
+
+    if (!selectedStudent || !selectedParent) return;
+    onSubmit(assignmentType, {
+      student_id: selectedStudent.id,
+      parent_id: selectedParent.id
+    });
   };
 
   return (
@@ -181,7 +162,6 @@ const AssignmentModal = ({
             </ToggleButtonGroup>
           </Box>
 
-          {/* School Selection */}
           <Autocomplete
             options={schools}
             getOptionLabel={(option) => option.school_name || option.name || ''}
@@ -191,11 +171,10 @@ const AssignmentModal = ({
             renderInput={(params) => (
               <TextField
                 {...params}
-                label="Okul Seçiniz"
+                label="Okul (Opsiyonel Filtre)"
                 margin="normal"
-                required
                 fullWidth
-                helperText="Atama yapılacak okulu seçiniz"
+                helperText="Boş bırakırsanız tüm öğrenciler/otobüsler listelenir"
                 InputProps={{
                   ...params.InputProps,
                   endAdornment: (
@@ -210,19 +189,12 @@ const AssignmentModal = ({
             isOptionEqualToValue={(option, value) => option.id === value.id}
           />
 
-          {!selectedSchool && (
-            <Alert severity="info" sx={{ mt: 2 }}>
-              Lütfen işlem yapmak için önce bir okul seçiniz.
-            </Alert>
-          )}
-
-          {/* Student Selection */}
           <Autocomplete
             options={students}
             getOptionLabel={(option) => `${option.full_name} (${option.student_number})`}
             value={selectedStudent}
             onChange={(event, newValue) => setSelectedStudent(newValue)}
-            disabled={!selectedSchool || loadingData}
+            disabled={loadingData}
             loading={loadingData}
             renderInput={(params) => (
               <TextField
@@ -252,7 +224,7 @@ const AssignmentModal = ({
               getOptionLabel={(option) => `${option.plate_number} (Kapasite: ${option.capacity})`}
               value={selectedBus}
               onChange={(event, newValue) => setSelectedBus(newValue)}
-              disabled={!selectedSchool || loadingData}
+              disabled={loadingData}
               loading={loadingData}
               renderInput={(params) => (
                 <TextField
@@ -314,7 +286,6 @@ const AssignmentModal = ({
             type="submit"
             variant="contained"
             disabled={
-              !selectedSchool ||
               !selectedStudent ||
               (assignmentType === 'student-bus' && !selectedBus) ||
               (assignmentType === 'parent-student' && !selectedParent)

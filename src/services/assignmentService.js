@@ -3,10 +3,14 @@ import { buildAuthHeaders } from './authService';
 import { ADMIN_API_URL } from './config';
 
 // Student-Bus Assignments
-export const fetchStudentBusAssignments = async (skip = 0, limit = 20) => {
+export const fetchStudentBusAssignments = async (skip = 0, limit = 20, organizationId = null) => {
+  const params = { skip, limit };
+  if (organizationId) {
+    params.organization_id = organizationId;
+  }
   const response = await axios.get(`${ADMIN_API_URL}/assignments/student-bus`, {
     headers: buildAuthHeaders(),
-    params: { skip, limit }
+    params
   });
   return response.data;
 };
@@ -33,10 +37,14 @@ export const deleteStudentBusAssignment = async (assignmentId) => {
 };
 
 // Parent-Student Relations
-export const fetchParentStudentRelations = async (skip = 0, limit = 20) => {
+export const fetchParentStudentRelations = async (skip = 0, limit = 20, organizationId = null) => {
+  const params = { skip, limit };
+  if (organizationId) {
+    params.organization_id = organizationId;
+  }
   const response = await axios.get(`${ADMIN_API_URL}/assignments/parent-student`, {
     headers: buildAuthHeaders(),
-    params: { skip, limit }
+    params
   });
   return response.data;
 };

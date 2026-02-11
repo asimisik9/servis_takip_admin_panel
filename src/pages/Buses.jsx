@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import BusesTable from '../components/BusesTable';
 import BusFormModal from '../components/BusFormModal';
 import { fetchBuses, createBus, updateBus, deleteBus } from '../services/busService';
@@ -17,12 +17,15 @@ import {
   DialogContentText,
   DialogActions,
   Button,
-  TablePagination
+  TablePagination,
+  TextField,
+  MenuItem
 } from '@mui/material';
 
 const Buses = () => {
   const currentUser = getUser();
   const isSuperAdmin = currentUser?.role === 'super_admin';
+  const latestBusesRequestRef = useRef(0);
 
   const [buses, setBuses] = useState([]);
   const [schools, setSchools] = useState([]);
@@ -38,32 +41,61 @@ const Buses = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
+  const [organizationFilter, setOrganizationFilter] = useState('');
+
+  const extractApiErrorMessage = (error, fallbackMessage) => {
+    const detail = error?.response?.data?.detail;
+    if (!detail) {
+      return fallbackMessage;
+    }
+    if (typeof detail === 'string') {
+      return detail;
+    }
+    if (Array.isArray(detail)) {
+      const messages = detail
+        .map((item) => item?.msg || item?.message)
+        .filter(Boolean);
+      return messages.length > 0 ? messages.join(' | ') : fallbackMessage;
+    }
+    if (typeof detail === 'object') {
+      return detail.message || fallbackMessage;
+    }
+    return fallbackMessage;
+  };
 
   const loadBuses = useCallback(async () => {
+    const requestId = latestBusesRequestRef.current + 1;
+    latestBusesRequestRef.current = requestId;
     setLoading(true);
     try {
       const skip = page * rowsPerPage;
-      const data = await fetchBuses(skip, rowsPerPage);
-      setBuses(data.items || []);
-      setTotalCount(data.total || 0);
+      const data = await fetchBuses(skip, rowsPerPage, null, organizationFilter || null);
+      if (requestId === latestBusesRequestRef.current) {
+        setBuses(data.items || []);
+        setTotalCount(data.total || 0);
+      }
     } catch (error) {
-      setSnackbar({
-        open: true,
-        message: error.response?.data?.detail || 'Otobüsler yüklenemedi!',
-        severity: 'error'
-      });
-      setBuses([]);
-      setTotalCount(0);
+      if (requestId === latestBusesRequestRef.current) {
+        setSnackbar({
+          open: true,
+          message: extractApiErrorMessage(error, 'Otobüsler yüklenemedi!'),
+          severity: 'error'
+        });
+        setBuses([]);
+        setTotalCount(0);
+      }
     } finally {
-      setLoading(false);
+      if (requestId === latestBusesRequestRef.current) {
+        setLoading(false);
+      }
     }
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, organizationFilter]);
 
   const loadSchools = async () => {
     try {
-      const data = await fetchSchools(0, 200);
+      const data = await fetchSchools(0, 100);
       setSchools(data.items || []);
-    } catch (error) {
+    } catch {
       setSnackbar({
         open: true,
         message: 'Okullar yüklenemedi!',
@@ -75,9 +107,9 @@ const Buses = () => {
 
   const loadDrivers = async () => {
     try {
-      const data = await fetchUsers(0, 200);
+      const data = await fetchUsers(0, 100);
       setDrivers(data.items || []);
-    } catch (error) {
+    } catch {
       setSnackbar({
         open: true,
         message: 'Şoförler yüklenemedi!',
@@ -104,6 +136,11 @@ const Buses = () => {
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleOrganizationFilterChange = (event) => {
+    setOrganizationFilter(event.target.value);
     setPage(0);
   };
 
@@ -175,6 +212,25 @@ const Buses = () => {
 
   return (
     <>
+      {isSuperAdmin && (
+        <Box sx={{ mb: 2, maxWidth: 420 }}>
+          <TextField
+            select
+            fullWidth
+            label="Organizasyona Göre Filtrele"
+            value={organizationFilter}
+            onChange={handleOrganizationFilterChange}
+          >
+            <MenuItem value="">Tümü</MenuItem>
+            {organizations.map((org) => (
+              <MenuItem key={org.id} value={org.id}>
+                {org.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      )}
+
       <BusesTable
         buses={buses}
         schools={schools}

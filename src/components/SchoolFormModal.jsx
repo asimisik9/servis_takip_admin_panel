@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box } from '@mui/material';
 
-const SchoolFormModal = ({ open, onClose, onSubmit, initialData, users }) => {
+const SchoolFormModal = ({ open, onClose, onSubmit, initialData, users, organizations = [], isSuperAdmin = false }) => {
   const [form, setForm] = useState({
     school_name: '',
     school_address: '',
-    contact_person_id: ''
+    contact_person_id: '',
+    organization_id: ''
   });
 
   useEffect(() => {
@@ -13,13 +14,15 @@ const SchoolFormModal = ({ open, onClose, onSubmit, initialData, users }) => {
       setForm({
         school_name: initialData.school_name || '',
         school_address: initialData.school_address || '',
-        contact_person_id: initialData.contact_person_id || ''
+        contact_person_id: initialData.contact_person_id || '',
+        organization_id: initialData.organization_id || ''
       });
     } else {
       setForm({
         school_name: '',
         school_address: '',
-        contact_person_id: ''
+        contact_person_id: '',
+        organization_id: ''
       });
     }
   }, [initialData, open]);
@@ -30,7 +33,15 @@ const SchoolFormModal = ({ open, onClose, onSubmit, initialData, users }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(form);
+    const submitData = { ...form };
+    if (isSuperAdmin) {
+      if (!submitData.organization_id) {
+        submitData.organization_id = null;
+      }
+    } else {
+      delete submitData.organization_id;
+    }
+    onSubmit(submitData);
   };
 
   return (
@@ -60,6 +71,31 @@ const SchoolFormModal = ({ open, onClose, onSubmit, initialData, users }) => {
             value={form.school_address}
             onChange={handleChange}
           />
+          {isSuperAdmin && (
+            <TextField
+              margin="normal"
+              label="Organizasyon"
+              name="organization_id"
+              select
+              fullWidth
+              required
+              value={form.organization_id}
+              onChange={handleChange}
+              helperText="Okulun bağlı olacağı organizasyon"
+            >
+              {organizations && organizations.length > 0 ? (
+                organizations.map((org) => (
+                  <MenuItem key={org.id} value={org.id}>
+                    {org.name}
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled value="">
+                  Organizasyon bulunamadı
+                </MenuItem>
+              )}
+            </TextField>
+          )}
           <TextField
             margin="normal"
             label="İletişim Kişisi"

@@ -3,6 +3,8 @@ import SchoolsTable from '../components/SchoolsTable';
 import SchoolFormModal from '../components/SchoolFormModal';
 import { fetchSchools, createSchool, updateSchool, deleteSchool } from '../services/schoolService';
 import { fetchUsers } from '../services/userService';
+import { fetchAllOrganizations } from '../services/organizationService';
+import { getUser } from '../services/authService';
 import {
   CircularProgress,
   Box,
@@ -14,12 +16,17 @@ import {
   DialogContentText,
   DialogActions,
   Button,
-  TablePagination
+  TablePagination,
+  TextField,
+  MenuItem
 } from '@mui/material';
 
 const Schools = () => {
+  const currentUser = getUser();
+  const isSuperAdmin = currentUser?.role === 'super_admin';
   const [schools, setSchools] = useState([]);
   const [users, setUsers] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingSchool, setEditingSchool] = useState(null);
@@ -30,12 +37,13 @@ const Schools = () => {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
+  const [organizationFilter, setOrganizationFilter] = useState('');
 
   const loadSchools = useCallback(async () => {
     setLoading(true);
     try {
       const skip = page * rowsPerPage;
-      const data = await fetchSchools(skip, rowsPerPage);
+      const data = await fetchSchools(skip, rowsPerPage, organizationFilter || null);
       setSchools(data.items || []);
       setTotalCount(data.total || 0);
     } catch (error) {
@@ -49,11 +57,12 @@ const Schools = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, rowsPerPage]);
+  }, [page, rowsPerPage, organizationFilter]);
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     try {
-      const data = await fetchUsers(0, 200);
+      const userOrgFilter = isSuperAdmin ? null : (organizationFilter || null);
+      const data = await fetchUsers(0, 200, userOrgFilter);
       setUsers(data.items || []);
     } catch (error) {
       setSnackbar({
@@ -63,12 +72,22 @@ const Schools = () => {
       });
       setUsers([]);
     }
-  };
+  }, [isSuperAdmin, organizationFilter]);
 
   useEffect(() => {
     loadSchools();
     loadUsers();
-  }, [loadSchools]);
+  }, [loadSchools, loadUsers]);
+
+  useEffect(() => {
+    if (!isSuperAdmin) {
+      setOrganizations([]);
+      return;
+    }
+    fetchAllOrganizations()
+      .then((orgs) => setOrganizations(orgs || []))
+      .catch(() => setOrganizations([]));
+  }, [isSuperAdmin]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -76,6 +95,11 @@ const Schools = () => {
 
   const handleChangeRowsPerPage = (event) => {
     setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleOrganizationFilterChange = (event) => {
+    setOrganizationFilter(event.target.value);
     setPage(0);
   };
 
@@ -147,6 +171,25 @@ const Schools = () => {
 
   return (
     <>
+      {isSuperAdmin && (
+        <Box sx={{ mb: 2, maxWidth: 420 }}>
+          <TextField
+            select
+            fullWidth
+            label="Organizasyona Göre Filtrele"
+            value={organizationFilter}
+            onChange={handleOrganizationFilterChange}
+          >
+            <MenuItem value="">Tümü</MenuItem>
+            {organizations.map((org) => (
+              <MenuItem key={org.id} value={org.id}>
+                {org.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      )}
+
       <SchoolsTable
         schools={schools}
         users={users}
@@ -174,6 +217,8 @@ const Schools = () => {
         onSubmit={handleSchoolSubmit}
         initialData={editingSchool}
         users={users}
+        organizations={organizations}
+        isSuperAdmin={isSuperAdmin}
       />
 
       <Dialog

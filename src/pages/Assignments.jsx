@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import AssignmentsTable from '../components/AssignmentsTable';
 import AssignmentModal from '../components/AssignmentModal';
+import { fetchAllOrganizations } from '../services/organizationService';
+import { getUser } from '../services/authService';
 import {
   fetchStudentBusAssignments,
   fetchParentStudentRelations,
@@ -9,7 +11,6 @@ import {
   deleteStudentBusAssignment,
   deleteParentStudentRelation
 } from '../services/assignmentService';
-import { getUser } from '../services/authService';
 
 import {
   CircularProgress,
@@ -22,18 +23,17 @@ import {
   DialogContentText,
     DialogActions,
     Button,
-    TablePagination
+    TablePagination,
+    TextField,
+    MenuItem
   } from '@mui/material';
 
 const Assignments = () => {
   const currentUser = getUser();
-  const canManageParentRelations = !(
-    currentUser?.role === 'admin' &&
-    currentUser?.organization?.type === 'transport_company'
-  );
-
+  const isSuperAdmin = currentUser?.role === 'super_admin';
   const [studentBusAssignments, setStudentBusAssignments] = useState([]);
   const [parentStudentRelations, setParentStudentRelations] = useState([]);
+  const [organizations, setOrganizations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, type: null, id: null });
@@ -51,30 +51,31 @@ const Assignments = () => {
   const [psPage, setPsPage] = useState(0);
   const [psRowsPerPage, setPsRowsPerPage] = useState(20);
   const [psTotal, setPsTotal] = useState(0);
+  const [organizationFilter, setOrganizationFilter] = useState('');
 
   const loadStudentBusAssignments = useCallback(async () => {
     try {
       const skip = sbPage * sbRowsPerPage;
-      const data = await fetchStudentBusAssignments(skip, sbRowsPerPage);
+      const data = await fetchStudentBusAssignments(skip, sbRowsPerPage, organizationFilter || null);
       setStudentBusAssignments(data.items || []);
       setSbTotal(data.total || 0);
     } catch (error) {
       console.error('Error loading student-bus assignments:', error);
       setStudentBusAssignments([]);
     }
-  }, [sbPage, sbRowsPerPage]);
+  }, [sbPage, sbRowsPerPage, organizationFilter]);
 
   const loadParentStudentRelations = useCallback(async () => {
     try {
       const skip = psPage * psRowsPerPage;
-      const data = await fetchParentStudentRelations(skip, psRowsPerPage);
+      const data = await fetchParentStudentRelations(skip, psRowsPerPage, organizationFilter || null);
       setParentStudentRelations(data.items || []);
       setPsTotal(data.total || 0);
     } catch (error) {
       console.error('Error loading parent-student relations:', error);
       setParentStudentRelations([]);
     }
-  }, [psPage, psRowsPerPage]);
+  }, [psPage, psRowsPerPage, organizationFilter]);
 
   useEffect(() => {
     const loadAll = async () => {
@@ -87,6 +88,16 @@ const Assignments = () => {
     };
     loadAll();
   }, [loadStudentBusAssignments, loadParentStudentRelations]);
+
+  useEffect(() => {
+    if (!isSuperAdmin) {
+      setOrganizations([]);
+      return;
+    }
+    fetchAllOrganizations()
+      .then((orgs) => setOrganizations(orgs || []))
+      .catch(() => setOrganizations([]));
+  }, [isSuperAdmin]);
 
   const handleTabChange = (event, newValue) => {
     setActiveTab(newValue);
@@ -110,15 +121,13 @@ const Assignments = () => {
     setPsPage(0);
   };
 
+  const handleOrganizationFilterChange = (event) => {
+    setOrganizationFilter(event.target.value);
+    setSbPage(0);
+    setPsPage(0);
+  };
+
   const handleAddAssignment = () => {
-    if (activeTab === 1 && !canManageParentRelations) {
-      setSnackbar({
-        open: true,
-        message: 'Taşıma şirketi adminleri öğrenci-veli ilişkisi oluşturamaz.',
-        severity: 'warning'
-      });
-      return;
-    }
     setModalOpen(true);
   };
 
@@ -133,14 +142,6 @@ const Assignments = () => {
         setSnackbar({ open: true, message: 'Öğrenci-Otobüs ataması başarıyla yapıldı!', severity: 'success' });
         loadStudentBusAssignments();
       } else {
-        if (!canManageParentRelations) {
-          setSnackbar({
-            open: true,
-            message: 'Taşıma şirketi adminleri öğrenci-veli ilişkisi oluşturamaz.',
-            severity: 'warning'
-          });
-          return;
-        }
         await assignParentToStudent(formData.student_id, formData.parent_id);
         setSnackbar({ open: true, message: 'Öğrenci-Veli ilişkisi başarıyla oluşturuldu!', severity: 'success' });
         loadParentStudentRelations();
@@ -167,14 +168,6 @@ const Assignments = () => {
         setSnackbar({ open: true, message: 'Atama başarıyla kaldırıldı!', severity: 'success' });
         loadStudentBusAssignments();
       } else {
-        if (!canManageParentRelations) {
-          setSnackbar({
-            open: true,
-            message: 'Taşıma şirketi adminleri öğrenci-veli ilişkisi silemez.',
-            severity: 'warning'
-          });
-          return;
-        }
         await deleteParentStudentRelation(deleteDialog.id);
         setSnackbar({ open: true, message: 'İlişki başarıyla kaldırıldı!', severity: 'success' });
         loadParentStudentRelations();
@@ -204,6 +197,25 @@ const Assignments = () => {
 
   return (
     <>
+      {isSuperAdmin && (
+        <Box sx={{ mb: 2, maxWidth: 420 }}>
+          <TextField
+            select
+            fullWidth
+            label="Organizasyona Göre Filtrele"
+            value={organizationFilter}
+            onChange={handleOrganizationFilterChange}
+          >
+            <MenuItem value="">Tümü</MenuItem>
+            {organizations.map((org) => (
+              <MenuItem key={org.id} value={org.id}>
+                {org.name}
+              </MenuItem>
+            ))}
+          </TextField>
+        </Box>
+      )}
+
       <AssignmentsTable
         studentBusAssignments={studentBusAssignments}
         parentStudentRelations={parentStudentRelations}
@@ -213,7 +225,7 @@ const Assignments = () => {
         onDeleteParentStudent={handleDeleteParentStudent}
         activeTab={activeTab}
         onTabChange={handleTabChange}
-        canManageParentRelations={canManageParentRelations}
+        canManageParentRelations
       />
 
       {/* Pagination for current tab */}
@@ -233,7 +245,8 @@ const Assignments = () => {
         open={modalOpen}
         onClose={handleModalClose}
         onSubmit={handleAssignmentSubmit}
-        canCreateParentRelation={canManageParentRelations}
+        canCreateParentRelation
+        organizationFilter={organizationFilter || null}
       />
 
       <Dialog

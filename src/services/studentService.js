@@ -10,9 +10,10 @@ const API_URL = `${ADMIN_API_URL}/students`;
  * @param {number} limit - Number of items per page
  * @returns {Promise<{items: Array, total: number, skip: number, limit: number}>}
  */
-export const fetchStudents = async (skip = 0, limit = 20, schoolId = null) => {
+export const fetchStudents = async (skip = 0, limit = 20, schoolId = null, organizationId = null) => {
   const params = { skip, limit };
   if (schoolId) params.school_id = schoolId;
+  if (organizationId) params.organization_id = organizationId;
 
   const response = await axios.get(API_URL, {
     headers: buildAuthHeaders(),

@@ -111,6 +111,14 @@ const Organizations = () => {
                     name: formData.name,
                     type: formData.type,
                 };
+                if (formData.create_admin) {
+                    createPayload.admin = {
+                        full_name: formData.admin_full_name?.trim(),
+                        email: formData.admin_email?.trim(),
+                        phone_number: formData.admin_phone_number?.trim(),
+                        password: formData.admin_password,
+                    };
+                }
                 await createOrganization(createPayload);
                 setSnackbar({ open: true, message: 'Organizasyon başarıyla eklendi!', severity: 'success' });
             }

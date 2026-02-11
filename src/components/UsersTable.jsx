@@ -19,7 +19,7 @@ const roleColors = {
   veli: 'success'
 };
 
-const UsersTable = ({ users, onAdd, onEdit, onDelete }) => {
+const UsersTable = ({ users, onAdd, onEdit, onDelete, loading = false }) => {
   const currentUser = getUser();
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
@@ -95,19 +95,35 @@ const UsersTable = ({ users, onAdd, onEdit, onDelete }) => {
   ];
 
   return (
-    <Box sx={{ width: '100%', height: 600, bgcolor: 'background.paper', p: 2, borderRadius: 2, boxShadow: 2 }}>
+    <Box
+      sx={{
+        width: '100%',
+        bgcolor: 'background.paper',
+        p: 2,
+        borderRadius: 2,
+        boxShadow: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 1,
+      }}
+    >
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h5">Kullanıcılar</Typography>
         <Button variant="contained" onClick={onAdd}>Yeni Kullanıcı</Button>
       </Box>
-      <DataGrid
-        rows={users}
-        columns={columns}
-        disableSelectionOnClick
-        hideFooter
-        autoHeight
-        sx={{ minWidth: 360 }}
-      />
+      <Box sx={{ width: '100%', height: { xs: 420, md: 560 } }}>
+        <DataGrid
+          rows={users}
+          columns={columns}
+          disableRowSelectionOnClick
+          hideFooter
+          loading={loading}
+          sx={{
+            minWidth: 360,
+            border: 0,
+          }}
+        />
+      </Box>
     </Box>
   );
 };

@@ -21,7 +21,8 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
     password: '',
     organization_id: ''
   });
-  const requiresOrganization = isSuperAdmin && form.role === 'admin';
+  const [fieldErrors, setFieldErrors] = useState({});
+  const requiresOrganization = isSuperAdmin && form.role !== 'super_admin';
 
   useEffect(() => {
     if (initialData) {
@@ -43,14 +44,53 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
         organization_id: ''
       });
     }
+    setFieldErrors({});
   }, [initialData, open]);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFieldErrors((prev) => ({ ...prev, [name]: undefined }));
+    if (name === 'role') {
+      setForm((prev) => ({
+        ...prev,
+        role: value,
+        organization_id: value === 'super_admin' ? '' : prev.organization_id
+      }));
+      return;
+    }
+    setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    const nextErrors = {};
+
+    const digits = (form.phone_number || '').replace(/\D/g, '');
+    if (digits.length < 10) {
+      nextErrors.phone_number = 'Telefon numarası en az 10 rakam içermelidir.';
+    }
+
+    if (requiresOrganization && !form.organization_id) {
+      nextErrors.organization_id = 'Bu rol için organizasyon seçimi zorunludur.';
+    }
+
+    if (!initialData || form.password) {
+      if (form.password.length < 8) {
+        nextErrors.password = 'Şifre en az 8 karakter olmalıdır.';
+      } else if (!/[A-Z]/.test(form.password)) {
+        nextErrors.password = 'Şifre en az 1 büyük harf içermelidir.';
+      } else if (!/[a-z]/.test(form.password)) {
+        nextErrors.password = 'Şifre en az 1 küçük harf içermelidir.';
+      } else if (!/\d/.test(form.password)) {
+        nextErrors.password = 'Şifre en az 1 rakam içermelidir.';
+      }
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      return;
+    }
+
     const submitData = { ...form };
     if (initialData && !submitData.password) {
       delete submitData.password;
@@ -59,9 +99,6 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
     if (!isSuperAdmin) {
       delete submitData.organization_id;
     } else {
-      if (requiresOrganization && !submitData.organization_id) {
-        return;
-      }
       if (submitData.organization_id === '') {
         submitData.organization_id = null;
       }
@@ -102,6 +139,8 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
             placeholder="+905551234567"
             value={form.phone_number}
             onChange={handleChange}
+            error={Boolean(fieldErrors.phone_number)}
+            helperText={fieldErrors.phone_number}
           />
           <TextField
             margin="normal"
@@ -110,9 +149,12 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
             type="password"
             fullWidth
             required={!initialData}
-            helperText={initialData ? 'Değiştirmek istemiyorsanız boş bırakın' : ''}
+            helperText={fieldErrors.password || (initialData
+              ? 'Boş bırakırsanız değişmez. Kural: en az 8 karakter, 1 büyük, 1 küçük, 1 rakam.'
+              : 'Kural: en az 8 karakter, 1 büyük, 1 küçük, 1 rakam.')}
             value={form.password}
             onChange={handleChange}
+            error={Boolean(fieldErrors.password)}
           />
           <TextField
             margin="normal"
@@ -140,7 +182,10 @@ const UserFormModal = ({ open, onClose, onSubmit, initialData, organizations = [
               required={requiresOrganization}
               value={form.organization_id}
               onChange={handleChange}
-              helperText={requiresOrganization ? "Admin rolü için organizasyon zorunludur" : "Sadece super_admin organizasyonsuz olabilir"}
+              error={Boolean(fieldErrors.organization_id)}
+              helperText={fieldErrors.organization_id || (requiresOrganization
+                ? "Bu rol için organizasyon zorunludur"
+                : "Sadece super_admin organizasyonsuz olabilir")}
             >
               {form.role === 'super_admin' && (
                 <MenuItem value="">
