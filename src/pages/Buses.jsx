@@ -4,7 +4,7 @@ import BusFormModal from '../components/BusFormModal';
 import { fetchBuses, createBus, updateBus, deleteBus } from '../services/busService';
 import { fetchSchools } from '../services/schoolService';
 import { fetchUsers } from '../services/userService';
-import { fetchAllOrganizations } from '../services/organizationService';
+import { fetchAllOrganizations, fetchContracts } from '../services/organizationService';
 import { getUser } from '../services/authService';
 import {
   CircularProgress,
@@ -91,33 +91,54 @@ const Buses = () => {
     }
   }, [page, rowsPerPage, organizationFilter]);
 
-  const loadSchools = async () => {
+  const loadSchools = useCallback(async () => {
     try {
-      const data = await fetchSchools(0, 100);
+      if (isSuperAdmin && organizationFilter) {
+        const [schoolData, contractData] = await Promise.all([
+          fetchSchools(0, 500),
+          fetchContracts({
+            companyOrgId: organizationFilter,
+            activeOnly: true,
+            limit: 500,
+          }),
+        ]);
+
+        const allowedSchoolOrgIds = new Set(
+          (Array.isArray(contractData) ? contractData : []).map((contract) => contract.school_org_id),
+        );
+        const filteredSchools = (schoolData.items || []).filter((school) =>
+          allowedSchoolOrgIds.has(school.organization_id),
+        );
+        setSchools(filteredSchools);
+        return;
+      }
+
+      const data = await fetchSchools(0, 500);
       setSchools(data.items || []);
-    } catch {
+    } catch (error) {
       setSnackbar({
         open: true,
-        message: 'Okullar yüklenemedi!',
+        message: extractApiErrorMessage(error, 'Okullar yüklenemedi!'),
         severity: 'warning'
       });
       setSchools([]);
     }
-  };
+  }, [isSuperAdmin, organizationFilter]);
 
-  const loadDrivers = async () => {
+  const loadDrivers = useCallback(async () => {
     try {
-      const data = await fetchUsers(0, 100);
+      const userOrgFilter = isSuperAdmin ? (organizationFilter || null) : null;
+      const data = await fetchUsers(0, 200, userOrgFilter);
       setDrivers(data.items || []);
-    } catch {
+    } catch (error) {
       setSnackbar({
         open: true,
-        message: 'Şoförler yüklenemedi!',
+        message: extractApiErrorMessage(error, 'Şoförler yüklenemedi!'),
         severity: 'warning'
       });
       setDrivers([]);
     }
-  };
+  }, [isSuperAdmin, organizationFilter]);
 
   useEffect(() => {
     loadBuses();
@@ -128,7 +149,7 @@ const Buses = () => {
         .then((orgs) => setOrganizations((orgs || []).filter((org) => org.type === 'transport_company')))
         .catch(() => setOrganizations([]));
     }
-  }, [loadBuses, isSuperAdmin]);
+  }, [loadBuses, loadSchools, loadDrivers, isSuperAdmin]);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -260,7 +281,8 @@ const Buses = () => {
         initialData={editingBus}
         schools={schools}
         drivers={drivers}
-        organizations={organizations}
+        organizations={organizationFilter ? organizations.filter((org) => org.id === organizationFilter) : organizations}
+        defaultOrganizationId={organizationFilter}
       />
 
       <Dialog

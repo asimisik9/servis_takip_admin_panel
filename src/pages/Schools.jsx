@@ -61,7 +61,7 @@ const Schools = () => {
 
   const loadUsers = useCallback(async () => {
     try {
-      const userOrgFilter = isSuperAdmin ? null : (organizationFilter || null);
+      const userOrgFilter = isSuperAdmin ? (organizationFilter || null) : null;
       const data = await fetchUsers(0, 200, userOrgFilter);
       setUsers(data.items || []);
     } catch (error) {

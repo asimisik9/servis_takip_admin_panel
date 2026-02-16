@@ -3,6 +3,7 @@ import { buildAuthHeaders } from './authService';
 import { ADMIN_API_URL } from './config';
 
 const API_URL = `${ADMIN_API_URL}/organizations`;
+const CONTRACTS_API_URL = `${API_URL}/contracts`;
 
 /**
  * Fetch organizations with pagination
@@ -74,6 +75,47 @@ export const deleteOrganization = async (orgId) => {
 
 export const getOrganizationById = async (orgId) => {
     const response = await axios.get(`${API_URL}/${orgId}`, {
+        headers: buildAuthHeaders(),
+    });
+    return response.data;
+};
+
+export const fetchContracts = async ({
+    schoolOrgId = null,
+    companyOrgId = null,
+    activeOnly = true,
+    skip = 0,
+    limit = 200
+} = {}) => {
+    const params = {
+        active_only: activeOnly,
+        skip,
+        limit
+    };
+
+    if (schoolOrgId) {
+        params.school_org_id = schoolOrgId;
+    }
+    if (companyOrgId) {
+        params.company_org_id = companyOrgId;
+    }
+
+    const response = await axios.get(CONTRACTS_API_URL, {
+        headers: buildAuthHeaders(),
+        params
+    });
+    return response.data;
+};
+
+export const createContract = async (contractData) => {
+    const response = await axios.post(CONTRACTS_API_URL, contractData, {
+        headers: buildAuthHeaders(),
+    });
+    return response.data;
+};
+
+export const terminateContract = async (contractId) => {
+    const response = await axios.delete(`${CONTRACTS_API_URL}/${contractId}`, {
         headers: buildAuthHeaders(),
     });
     return response.data;

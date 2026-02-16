@@ -1,8 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Dialog, DialogTitle, DialogContent, DialogActions, Button, TextField, MenuItem, Box } from '@mui/material';
 import { getUser } from '../services/authService';
 
-const BusFormModal = ({ open, onClose, onSubmit, initialData, schools, drivers, organizations = [] }) => {
+const BusFormModal = ({
+  open,
+  onClose,
+  onSubmit,
+  initialData,
+  schools,
+  drivers,
+  organizations = [],
+  defaultOrganizationId = '',
+}) => {
   const currentUser = getUser();
   const isSuperAdmin = currentUser?.role === 'super_admin';
 
@@ -29,10 +38,10 @@ const BusFormModal = ({ open, onClose, onSubmit, initialData, schools, drivers, 
         capacity: '',
         school_id: '',
         current_driver_id: '',
-        organization_id: ''
+        organization_id: defaultOrganizationId || ''
       });
     }
-  }, [initialData, open]);
+  }, [initialData, open, defaultOrganizationId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,8 +67,16 @@ const BusFormModal = ({ open, onClose, onSubmit, initialData, schools, drivers, 
     onSubmit(submitData);
   };
 
-  // Sadece şoför rolündeki kullanıcıları filtrele
-  const driverUsers = drivers.filter(user => user.role === 'sofor');
+  const driverUsers = useMemo(() => {
+    const onlyDrivers = drivers.filter((user) => user.role === 'sofor');
+    if (!isSuperAdmin) {
+      return onlyDrivers;
+    }
+    if (!form.organization_id) {
+      return [];
+    }
+    return onlyDrivers.filter((user) => user.organization_id === form.organization_id);
+  }, [drivers, form.organization_id, isSuperAdmin]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
